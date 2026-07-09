@@ -231,7 +231,7 @@ export async function guardarCoberturaMensual(cobertura: CoberturaMensualInput):
 export async function obtenerAsignacionBloquesMensual(mes: number, anio: number): Promise<AsignacionBloqueMensual[]> {
   const { data, error } = await ensureSupabase()
     .from('asignacion_bloques_mensual')
-    .select('*, personal(*), bloques(*), bloque_mes_anterior:bloques!asignacion_bloques_mensual_bloque_mes_anterior_id_fkey(*), bloque_siguiente_sugerido:bloques!asignacion_bloques_mensual_bloque_siguiente_sugerido_id_fkey(*)')
+    .select('*, personal(*), bloques:bloques!asignacion_bloques_mensual_bloque_id_fkey(*), bloque_mes_anterior:bloques!asignacion_bloques_mensual_bloque_mes_anterior_id_fkey(*), bloque_siguiente_sugerido:bloques!asignacion_bloques_mensual_bloque_siguiente_sugerido_id_fkey(*)')
     .eq('mes', mes)
     .eq('anio', anio);
 
