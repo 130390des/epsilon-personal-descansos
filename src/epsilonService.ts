@@ -61,6 +61,7 @@ export async function obtenerPersonal(): Promise<Personal[]> {
   const { data, error } = await ensureSupabase()
     .from('personal')
     .select('*, turnos(*)')
+    .eq('activo', true)
     .order('created_at', { ascending: true });
 
   if (error) throw new Error(`No se pudo obtener el personal: ${error.message}`);
@@ -102,6 +103,7 @@ export async function crearPersonal(personal: PersonalInput): Promise<Personal> 
 
   const payload = {
     ...personal,
+    activo: true,
     nombre_completo: personal.nombre_completo.trim().replace(/\s+/g, ' '),
     nombre_normalizado: normalizarNombrePersonal(personal.nombre_completo),
   };
@@ -126,6 +128,7 @@ export async function actualizarPersonal(id: string, personal: PersonalInput): P
 
   const payload = {
     ...personal,
+    activo: true,
     nombre_completo: personal.nombre_completo.trim().replace(/\s+/g, ' '),
     nombre_normalizado: normalizarNombrePersonal(personal.nombre_completo),
     updated_at: new Date().toISOString(),
@@ -156,22 +159,37 @@ export const inactivarPersonal = (id: string) => cambiarEstadoPersonal(id, false
 export const normalizarNombre = normalizarNombrePersonal;
 
 export async function eliminarPersonal(id: string) {
-  const { error } = await ensureSupabase()
+  const supabase = ensureSupabase();
+
+  await supabase.from('cobertura_mensual').delete().eq('personal_id', id);
+  await supabase.from('asignacion_bloques_mensual').delete().eq('personal_id', id);
+
+  const columnasRol = [
+    'supervisor_id',
+    'bloque_1_personal_id',
+    'bloque_2_personal_id',
+    'bloque_3_personal_id',
+    'bloque_4_personal_id',
+    'bloque_5_personal_id',
+    'cobertura_personal_id',
+    'falta_personal_id',
+  ];
+
+  await Promise.all(
+    columnasRol.map((columna) =>
+      supabase
+        .from('rol_diario')
+        .update({ [columna]: null, updated_at: new Date().toISOString() })
+        .eq(columna, id),
+    ),
+  );
+
+  const { error } = await supabase
     .from('personal')
     .delete()
     .eq('id', id);
 
   if (!error) return;
-
-  const mensaje = error.message.toLowerCase();
-  if (
-    mensaje.includes('foreign key') ||
-    mensaje.includes('violates') ||
-    mensaje.includes('constraint')
-  ) {
-    await cambiarEstadoPersonal(id, false);
-    return;
-  }
 
   throw new Error(`No se pudo eliminar el personal: ${error.message}`);
 }

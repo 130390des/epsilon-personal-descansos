@@ -22,7 +22,6 @@ import { FormEvent, useEffect, useMemo, useState } from 'react';
 import {
   actualizarBloque,
   actualizarPersonal,
-  cambiarEstadoPersonal,
   confirmarRolMensual,
   confirmarRotacionMensual,
   crearPersonal,
@@ -365,7 +364,7 @@ function App() {
 
           {seccionActiva === 'inicio' && <Inicio supervisores={supervisores.length} monitoristas={monitoristas.length} bloques={bloquesOrdenados.length} horario={horarioActivo} rotacion={rotacion} cobertura={coberturas} onNavigate={setSeccionActiva} />}
           {seccionActiva === 'operacion' && <Operacion bloques={bloquesOrdenados} asignaciones={asignaciones} rolDiario={rolDiario} onGenerarRol={generarPropuestaRol} guardando={guardando} />}
-          {seccionActiva === 'personal' && <PersonalPanel formulario={formulario} turnos={turnos} personal={personal} editandoId={editandoId} guardando={guardando} actualizarCampo={actualizarCampo} guardarPersonal={guardarPersonal} limpiarFormulario={limpiarFormulario} editarPersona={editarPersona} alternarActivo={async (persona) => { await cambiarEstadoPersonal(persona.id, !persona.activo); await cargarDatos(); }} eliminarPersona={async (persona) => { await eliminarPersonal(persona.id); if (editandoId === persona.id) limpiarFormulario(); await cargarDatos(); }} />}
+          {seccionActiva === 'personal' && <PersonalPanel formulario={formulario} turnos={turnos} personal={personal} editandoId={editandoId} guardando={guardando} actualizarCampo={actualizarCampo} guardarPersonal={guardarPersonal} limpiarFormulario={limpiarFormulario} editarPersona={editarPersona} eliminarPersona={async (persona) => { await eliminarPersonal(persona.id); if (editandoId === persona.id) limpiarFormulario(); await cargarDatos(); }} />}
           {seccionActiva === 'descansos' && <DescansosPanel personal={personalActivo} turno={turnoActivo} rotacion={rotacion} />}
           {seccionActiva === 'bloques' && <BloquesPanel bloques={bloquesOrdenados} setBloques={setBloques} guardarBloque={guardarBloque} guardando={guardando} />}
           {seccionActiva === 'coberturas' && <CoberturasPanel mes={mes} anio={anio} personal={personalActivo} coberturas={coberturas} guardarCobertura={guardarCobertura} />}
@@ -407,7 +406,6 @@ function PersonalPanel({
   guardarPersonal,
   limpiarFormulario,
   editarPersona,
-  alternarActivo,
   eliminarPersona,
 }: {
   formulario: PersonalInput;
@@ -419,7 +417,6 @@ function PersonalPanel({
   guardarPersonal: (event: FormEvent<HTMLFormElement>) => void;
   limpiarFormulario: () => void;
   editarPersona: (persona: Personal) => void;
-  alternarActivo: (persona: Personal) => void;
   eliminarPersona: (persona: Personal) => void;
 }) {
   function confirmarEliminacion(persona: Personal) {
@@ -448,7 +445,6 @@ function PersonalPanel({
             ))}
           </select>
         </Field>
-        <Field label="Activo"><Toggle checked={formulario.activo} onChange={(value) => actualizarCampo('activo', value)} /></Field>
         <Field label="Puede cubrir descansos"><Toggle checked={formulario.puede_cubrir_descansos} onChange={(value) => actualizarCampo('puede_cubrir_descansos', value)} /></Field>
         <Field label="Puede ser monitorista"><Toggle checked={formulario.puede_ser_monitorista} onChange={(value) => actualizarCampo('puede_ser_monitorista', value)} /></Field>
         <Field label="Descanso base 1"><DaySelect value={formulario.descanso_base_1} onChange={(value) => actualizarCampo('descanso_base_1', value)} /></Field>
@@ -464,7 +460,7 @@ function PersonalPanel({
 
       <section className="panel table-panel">
         <PanelHeader title="Personal configurado" />
-        <Table headers={['Nombre completo', 'Puesto', 'Horario', 'Puede cubrir', 'Puede ser monitorista', 'Estado', 'Acciones']}>
+        <Table headers={['Nombre completo', 'Puesto', 'Horario', 'Puede cubrir', 'Puede ser monitorista', 'Acciones']}>
           {personal.map((persona) => (
             <tr key={persona.id}>
               <td>{persona.nombre_completo}</td>
@@ -472,11 +468,6 @@ function PersonalPanel({
               <td>{persona.turnos?.nombre ?? 'Sin turno'}</td>
               <td>{persona.puede_cubrir_descansos ? 'Si' : 'No'}</td>
               <td>{persona.puede_ser_monitorista ? 'Si' : 'No'}</td>
-              <td>
-                <button className="state-button" type="button" onClick={() => alternarActivo(persona)}>
-                  {persona.activo ? 'Activo' : 'Inactivo'}
-                </button>
-              </td>
               <td>
                 <div className="action-row">
                   <button className="edit-button" type="button" onClick={() => editarPersona(persona)} title="Editar"><Edit3 size={16} /></button>
