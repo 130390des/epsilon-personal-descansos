@@ -61,6 +61,7 @@ export async function obtenerPersonal(): Promise<Personal[]> {
   const { data, error } = await ensureSupabase()
     .from('personal')
     .select('*, turnos(*)')
+    .eq('activo', true)
     .order('created_at', { ascending: true });
 
   if (error) throw new Error(`No se pudo obtener el personal: ${error.message}`);
@@ -81,6 +82,19 @@ export async function validarPersonalDuplicado(nombre: string, ignorarId?: strin
   return null;
 }
 
+export function existePersonalDuplicadoLocal(
+  personal: Personal[],
+  nombre: string,
+  ignorarId?: string | null,
+) {
+  const nombreNormalizado = normalizarNombrePersonal(nombre);
+  return personal.find(
+    (persona) =>
+      normalizarNombrePersonal(persona.nombre_completo) === nombreNormalizado &&
+      persona.id !== ignorarId,
+  ) ?? null;
+}
+
 export async function crearPersonal(personal: PersonalInput): Promise<Personal> {
   const duplicado = await validarPersonalDuplicado(personal.nombre_completo);
   if (duplicado) {
@@ -89,6 +103,7 @@ export async function crearPersonal(personal: PersonalInput): Promise<Personal> 
 
   const payload = {
     ...personal,
+    activo: true,
     nombre_completo: personal.nombre_completo.trim().replace(/\s+/g, ' '),
     nombre_normalizado: normalizarNombrePersonal(personal.nombre_completo),
   };
@@ -113,6 +128,7 @@ export async function actualizarPersonal(id: string, personal: PersonalInput): P
 
   const payload = {
     ...personal,
+    activo: true,
     nombre_completo: personal.nombre_completo.trim().replace(/\s+/g, ' '),
     nombre_normalizado: normalizarNombrePersonal(personal.nombre_completo),
     updated_at: new Date().toISOString(),
@@ -141,6 +157,42 @@ export async function cambiarEstadoPersonal(id: string, activo: boolean) {
 
 export const inactivarPersonal = (id: string) => cambiarEstadoPersonal(id, false);
 export const normalizarNombre = normalizarNombrePersonal;
+
+export async function eliminarPersonal(id: string) {
+  const supabase = ensureSupabase();
+
+  await supabase.from('cobertura_mensual').delete().eq('personal_id', id);
+  await supabase.from('asignacion_bloques_mensual').delete().eq('personal_id', id);
+
+  const columnasRol = [
+    'supervisor_id',
+    'bloque_1_personal_id',
+    'bloque_2_personal_id',
+    'bloque_3_personal_id',
+    'bloque_4_personal_id',
+    'bloque_5_personal_id',
+    'cobertura_personal_id',
+    'falta_personal_id',
+  ];
+
+  await Promise.all(
+    columnasRol.map((columna) =>
+      supabase
+        .from('rol_diario')
+        .update({ [columna]: null, updated_at: new Date().toISOString() })
+        .eq(columna, id),
+    ),
+  );
+
+  const { error } = await supabase
+    .from('personal')
+    .delete()
+    .eq('id', id);
+
+  if (!error) return;
+
+  throw new Error(`No se pudo eliminar el personal: ${error.message}`);
+}
 
 export async function obtenerConfiguracionRotacion(): Promise<ConfiguracionRotacion | null> {
   const { data, error } = await ensureSupabase()
