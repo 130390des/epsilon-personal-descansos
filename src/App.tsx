@@ -26,6 +26,8 @@ import {
   confirmarRolMensual,
   confirmarRotacionMensual,
   crearPersonal,
+  eliminarPersonal,
+  existePersonalDuplicadoLocal,
   guardarAsignacionesBloquesMensual,
   guardarCoberturaMensual,
   guardarPropuestaRolMensual,
@@ -40,7 +42,6 @@ import {
   obtenerTurnos,
 } from './services/epsilonService';
 import { generarPropuestaRotacionMensual, generarRolMensual, ordenarBloques, personaDescansaEnFecha } from './lib/rolMensual';
-import { normalizarNombrePersonal } from './lib/nombres';
 import { DIA_LABEL, DIAS_SEMANA, formatearHorario } from './lib/rotacion';
 import { supabaseConfigured } from './lib/supabase';
 import type {
@@ -219,8 +220,7 @@ function App() {
     if (!formulario.nombre_completo.trim()) return setError('Captura el nombre completo.');
     if (!formulario.turno_id) return setError('Selecciona un turno.');
 
-    const nombre = normalizarNombrePersonal(formulario.nombre_completo);
-    const duplicado = personal.find((persona) => normalizarNombrePersonal(persona.nombre_completo) === nombre && persona.id !== editandoId);
+    const duplicado = existePersonalDuplicadoLocal(personal, formulario.nombre_completo, editandoId);
     if (duplicado) return setError('Este personal ya esta registrado. Puedes editarlo desde la tabla.');
 
     setGuardando(true);
@@ -365,7 +365,7 @@ function App() {
 
           {seccionActiva === 'inicio' && <Inicio supervisores={supervisores.length} monitoristas={monitoristas.length} bloques={bloquesOrdenados.length} horario={horarioActivo} rotacion={rotacion} cobertura={coberturas} onNavigate={setSeccionActiva} />}
           {seccionActiva === 'operacion' && <Operacion bloques={bloquesOrdenados} asignaciones={asignaciones} rolDiario={rolDiario} onGenerarRol={generarPropuestaRol} guardando={guardando} />}
-          {seccionActiva === 'personal' && <PersonalPanel formulario={formulario} turnos={turnos} personal={personal} editandoId={editandoId} guardando={guardando} actualizarCampo={actualizarCampo} guardarPersonal={guardarPersonal} limpiarFormulario={limpiarFormulario} editarPersona={editarPersona} alternarActivo={async (persona) => { await cambiarEstadoPersonal(persona.id, !persona.activo); await cargarDatos(); }} />}
+          {seccionActiva === 'personal' && <PersonalPanel formulario={formulario} turnos={turnos} personal={personal} editandoId={editandoId} guardando={guardando} actualizarCampo={actualizarCampo} guardarPersonal={guardarPersonal} limpiarFormulario={limpiarFormulario} editarPersona={editarPersona} alternarActivo={async (persona) => { await cambiarEstadoPersonal(persona.id, !persona.activo); await cargarDatos(); }} eliminarPersona={async (persona) => { await eliminarPersonal(persona.id); if (editandoId === persona.id) limpiarFormulario(); await cargarDatos(); }} />}
           {seccionActiva === 'descansos' && <DescansosPanel personal={personalActivo} turno={turnoActivo} rotacion={rotacion} />}
           {seccionActiva === 'bloques' && <BloquesPanel bloques={bloquesOrdenados} setBloques={setBloques} guardarBloque={guardarBloque} guardando={guardando} />}
           {seccionActiva === 'coberturas' && <CoberturasPanel mes={mes} anio={anio} personal={personalActivo} coberturas={coberturas} guardarCobertura={guardarCobertura} />}
@@ -397,8 +397,98 @@ function Operacion({ bloques, asignaciones, rolDiario, onGenerarRol, guardando }
   return <section className="panel padded"><PanelTitle>Resumen operativo</PanelTitle><div className="summary-grid"><InfoMetric label="Bloques configurados" value={bloques.length} /><InfoMetric label="Rotaciones guardadas" value={asignaciones.length} /><InfoMetric label="Dias del rol" value={rolDiario.length} /></div><InfoBox text="El rol diario se genera desde la rotacion mensual de bloques por monitorista, no desde rangos de hora." /><button className="primary-button wide" type="button" onClick={onGenerarRol} disabled={guardando}>{guardando ? <Loader2 className="spin" size={18} /> : <FileText size={18} />}Generar propuesta de rol</button></section>;
 }
 
-function PersonalPanel({ formulario, turnos, personal, editandoId, guardando, actualizarCampo, guardarPersonal, limpiarFormulario, editarPersona, alternarActivo }: { formulario: PersonalInput; turnos: Turno[]; personal: Personal[]; editandoId: string | null; guardando: boolean; actualizarCampo: <K extends keyof PersonalInput>(campo: K, valor: PersonalInput[K]) => void; guardarPersonal: (event: FormEvent<HTMLFormElement>) => void; limpiarFormulario: () => void; editarPersona: (persona: Personal) => void; alternarActivo: (persona: Personal) => void }) {
-  return <section className="work-grid"><form className="panel form-panel" onSubmit={guardarPersonal}><PanelTitle>Alta / Edicion de Personal</PanelTitle><Field label="Nombre completo"><input value={formulario.nombre_completo} onChange={(event) => actualizarCampo('nombre_completo', event.target.value)} /></Field><Field label="Puesto"><select value={formulario.puesto} onChange={(event) => actualizarCampo('puesto', event.target.value as Puesto)}><option>Supervisor</option><option>Monitorista</option></select></Field><Field label="Horario / Turno"><select value={formulario.turno_id ?? ''} onChange={(event) => actualizarCampo('turno_id', event.target.value)}><option value="">Selecciona turno</option>{turnos.map((turno) => <option key={turno.id} value={turno.id}>{turno.nombre} ({formatearHorario(turno.hora_inicio, turno.hora_fin)})</option>)}</select></Field><Field label="Activo"><Toggle checked={formulario.activo} onChange={(value) => actualizarCampo('activo', value)} /></Field><Field label="Puede cubrir descansos"><Toggle checked={formulario.puede_cubrir_descansos} onChange={(value) => actualizarCampo('puede_cubrir_descansos', value)} /></Field><Field label="Puede ser monitorista"><Toggle checked={formulario.puede_ser_monitorista} onChange={(value) => actualizarCampo('puede_ser_monitorista', value)} /></Field><Field label="Descanso base 1"><DaySelect value={formulario.descanso_base_1} onChange={(value) => actualizarCampo('descanso_base_1', value)} /></Field><Field label="Descanso base 2"><DaySelect value={formulario.descanso_base_2} onChange={(value) => actualizarCampo('descanso_base_2', value)} /></Field><Field label="Notas"><input value={formulario.notas ?? ''} onChange={(event) => actualizarCampo('notas', event.target.value)} /></Field><div className="button-row"><button className="primary-button" type="submit" disabled={guardando}>{guardando ? <Loader2 className="spin" size={18} /> : <Save size={18} />}Guardar</button><button className="secondary-button" type="button" onClick={limpiarFormulario}>{editandoId ? 'Cancelar edicion' : 'Limpiar'}</button></div></form><section className="panel table-panel"><PanelHeader title="Personal configurado" /><Table headers={['Nombre completo', 'Puesto', 'Horario', 'Puede cubrir', 'Puede ser monitorista', 'Estado', 'Acciones']}>{personal.map((persona) => <tr key={persona.id}><td>{persona.nombre_completo}</td><td>{persona.puesto}</td><td>{persona.turnos?.nombre ?? 'Sin turno'}</td><td>{persona.puede_cubrir_descansos ? 'Si' : 'No'}</td><td>{persona.puede_ser_monitorista ? 'Si' : 'No'}</td><td><button className="state-button" type="button" onClick={() => alternarActivo(persona)}>{persona.activo ? 'Activo' : 'Inactivo'}</button></td><td><button className="edit-button" type="button" onClick={() => editarPersona(persona)}><Edit3 size={16} /></button></td></tr>)}</Table></section></section>;
+function PersonalPanel({
+  formulario,
+  turnos,
+  personal,
+  editandoId,
+  guardando,
+  actualizarCampo,
+  guardarPersonal,
+  limpiarFormulario,
+  editarPersona,
+  alternarActivo,
+  eliminarPersona,
+}: {
+  formulario: PersonalInput;
+  turnos: Turno[];
+  personal: Personal[];
+  editandoId: string | null;
+  guardando: boolean;
+  actualizarCampo: <K extends keyof PersonalInput>(campo: K, valor: PersonalInput[K]) => void;
+  guardarPersonal: (event: FormEvent<HTMLFormElement>) => void;
+  limpiarFormulario: () => void;
+  editarPersona: (persona: Personal) => void;
+  alternarActivo: (persona: Personal) => void;
+  eliminarPersona: (persona: Personal) => void;
+}) {
+  function confirmarEliminacion(persona: Personal) {
+    const confirmado = window.confirm(`Eliminar a ${persona.nombre_completo}?`);
+    if (confirmado) eliminarPersona(persona);
+  }
+
+  return (
+    <section className="work-grid">
+      <form className="panel form-panel" onSubmit={guardarPersonal}>
+        <PanelTitle>Alta / Edicion de Personal</PanelTitle>
+        <Field label="Nombre completo">
+          <input value={formulario.nombre_completo} onChange={(event) => actualizarCampo('nombre_completo', event.target.value)} />
+        </Field>
+        <Field label="Puesto">
+          <select value={formulario.puesto} onChange={(event) => actualizarCampo('puesto', event.target.value as Puesto)}>
+            <option>Supervisor</option>
+            <option>Monitorista</option>
+          </select>
+        </Field>
+        <Field label="Horario / Turno">
+          <select value={formulario.turno_id ?? ''} onChange={(event) => actualizarCampo('turno_id', event.target.value)}>
+            <option value="">Selecciona turno</option>
+            {turnos.map((turno) => (
+              <option key={turno.id} value={turno.id}>{turno.nombre} ({formatearHorario(turno.hora_inicio, turno.hora_fin)})</option>
+            ))}
+          </select>
+        </Field>
+        <Field label="Activo"><Toggle checked={formulario.activo} onChange={(value) => actualizarCampo('activo', value)} /></Field>
+        <Field label="Puede cubrir descansos"><Toggle checked={formulario.puede_cubrir_descansos} onChange={(value) => actualizarCampo('puede_cubrir_descansos', value)} /></Field>
+        <Field label="Puede ser monitorista"><Toggle checked={formulario.puede_ser_monitorista} onChange={(value) => actualizarCampo('puede_ser_monitorista', value)} /></Field>
+        <Field label="Descanso base 1"><DaySelect value={formulario.descanso_base_1} onChange={(value) => actualizarCampo('descanso_base_1', value)} /></Field>
+        <Field label="Descanso base 2"><DaySelect value={formulario.descanso_base_2} onChange={(value) => actualizarCampo('descanso_base_2', value)} /></Field>
+        <Field label="Notas"><input value={formulario.notas ?? ''} onChange={(event) => actualizarCampo('notas', event.target.value)} /></Field>
+        <div className="button-row">
+          <button className="primary-button" type="submit" disabled={guardando}>
+            {guardando ? <Loader2 className="spin" size={18} /> : <Save size={18} />}Guardar
+          </button>
+          <button className="secondary-button" type="button" onClick={limpiarFormulario}>{editandoId ? 'Cancelar edicion' : 'Limpiar'}</button>
+        </div>
+      </form>
+
+      <section className="panel table-panel">
+        <PanelHeader title="Personal configurado" />
+        <Table headers={['Nombre completo', 'Puesto', 'Horario', 'Puede cubrir', 'Puede ser monitorista', 'Estado', 'Acciones']}>
+          {personal.map((persona) => (
+            <tr key={persona.id}>
+              <td>{persona.nombre_completo}</td>
+              <td>{persona.puesto}</td>
+              <td>{persona.turnos?.nombre ?? 'Sin turno'}</td>
+              <td>{persona.puede_cubrir_descansos ? 'Si' : 'No'}</td>
+              <td>{persona.puede_ser_monitorista ? 'Si' : 'No'}</td>
+              <td>
+                <button className="state-button" type="button" onClick={() => alternarActivo(persona)}>
+                  {persona.activo ? 'Activo' : 'Inactivo'}
+                </button>
+              </td>
+              <td>
+                <div className="action-row">
+                  <button className="edit-button" type="button" onClick={() => editarPersona(persona)} title="Editar"><Edit3 size={16} /></button>
+                  <button className="danger-button compact" type="button" onClick={() => confirmarEliminacion(persona)}>Eliminar</button>
+                </div>
+              </td>
+            </tr>
+          ))}
+        </Table>
+      </section>
+    </section>
+  );
 }
 
 function DescansosPanel({ personal, turno, rotacion }: { personal: Personal[]; turno: Turno | null; rotacion: ConfiguracionRotacion | null }) {

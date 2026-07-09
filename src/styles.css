@@ -678,6 +678,32 @@ th {
   padding: 0;
 }
 
+.action-row {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+}
+
+.danger-button {
+  min-height: 28px;
+  border: 1px solid #ffc6c6;
+  background: #fff5f5;
+  color: #a71919;
+  border-radius: 5px;
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  cursor: pointer;
+  font-weight: 800;
+  padding: 3px 10px;
+}
+
+.danger-button.compact {
+  min-height: 30px;
+  padding: 0 12px;
+  font-size: 13px;
+}
+
 .empty-cell {
   color: #516078;
   text-align: center;
