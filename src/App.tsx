@@ -77,6 +77,10 @@ type MenuId = (typeof menuItems)[number]['id'];
 const hoy = new Date();
 const mesActual = hoy.getMonth() + 1;
 const anioActual = hoy.getFullYear();
+const inicioSemanaActual = new Date(hoy);
+const diaSemanaActual = (hoy.getDay() + 6) % 7;
+inicioSemanaActual.setDate(hoy.getDate() - diaSemanaActual);
+inicioSemanaActual.setHours(0, 0, 0, 0);
 
 const estadoInicial: PersonalInput = {
   nombre_completo: '',
@@ -484,8 +488,7 @@ function PersonalPanel({
 
 function DescansosPanel({ personal, turno, rotacion }: { personal: Personal[]; turno: Turno | null; rotacion: ConfiguracionRotacion | null }) {
   const [semanas, setSemanas] = useState(1);
-  const fechaBase = `${anioActual}-${String(mesActual).padStart(2, '0')}-01`;
-  return <section className="panel table-panel"><PanelHeader title="Vista previa semanal / Turno matutino"><select value={semanas} onChange={(event) => setSemanas(Number(event.target.value))}><option value={1}>Semana actual</option><option value={2}>Semana siguiente</option><option value={4}>Proximas 4 semanas</option></select></PanelHeader><InfoBox text="Los descansos se recorren 1 dia cada 4 semanas." />{Array.from({ length: semanas }).map((_, semana) => <div key={semana} className="week-block"><h3>Semana {semana + 1}</h3><Table headers={['Personal', ...DIAS_SEMANA.map((dia) => DIA_LABEL[dia])]}>{personal.map((persona) => <tr key={`${persona.id}-${semana}`}><td>{persona.nombre_completo}</td>{DIAS_SEMANA.map((dia, index) => { const fecha = new Date(`${fechaBase}T00:00:00`); fecha.setDate(fecha.getDate() + semana * 7 + index); const iso = fecha.toISOString().slice(0, 10); const descansa = personaDescansaEnFecha({ persona, fecha: iso, rotacion }); return <td key={dia}><span className={`schedule-chip ${descansa ? 'rest' : 'work'}`}>{descansa ? 'Descanso' : formatearHorario(persona.turnos?.hora_inicio ?? turno?.hora_inicio, persona.turnos?.hora_fin ?? turno?.hora_fin)}</span></td>; })}</tr>)}</Table></div>)}</section>;
+  return <section className="panel table-panel"><PanelHeader title="Vista previa semanal / Turno matutino"><select value={semanas} onChange={(event) => setSemanas(Number(event.target.value))}><option value={1}>Semana actual</option><option value={2}>Semana siguiente</option><option value={4}>Proximas 4 semanas</option></select></PanelHeader><InfoBox text="La semana actual muestra los descansos base capturados en Personal. La rotacion se aplica sobre semanas completas." />{Array.from({ length: semanas }).map((_, semana) => <div key={semana} className="week-block"><h3>Semana {semana + 1}</h3><Table headers={['Personal', ...DIAS_SEMANA.map((dia) => DIA_LABEL[dia])]}>{personal.map((persona) => <tr key={`${persona.id}-${semana}`}><td>{persona.nombre_completo}</td>{DIAS_SEMANA.map((dia, index) => { const fecha = new Date(inicioSemanaActual); fecha.setDate(inicioSemanaActual.getDate() + semana * 7 + index); const iso = fecha.toISOString().slice(0, 10); const descansa = personaDescansaEnFecha({ persona, fecha: iso, rotacion }); return <td key={dia}><span className={`schedule-chip ${descansa ? 'rest' : 'work'}`}>{descansa ? 'Descanso' : formatearHorario(persona.turnos?.hora_inicio ?? turno?.hora_inicio, persona.turnos?.hora_fin ?? turno?.hora_fin)}</span></td>; })}</tr>)}</Table></div>)}</section>;
 }
 
 function BloquesPanel({ bloques, setBloques, guardarBloque, guardando }: { bloques: Bloque[]; setBloques: (bloques: Bloque[]) => void; guardarBloque: (bloque: Bloque) => void; guardando: boolean }) {
