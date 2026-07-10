@@ -72,7 +72,7 @@ const menuItems = [
   { id: 'personal', label: 'Personal', icon: User },
   { id: 'sitios', label: 'Sitios', icon: MapPin },
   { id: 'descansos', label: 'Descansos', icon: CalendarDays },
-  { id: 'rol', label: 'Rol mensual', icon: FileText },
+  { id: 'rol', label: 'Rol operativo', icon: FileText },
   { id: 'configuracion', label: 'Configuracion', icon: Settings },
 ] as const;
 
@@ -419,7 +419,7 @@ function App() {
     personal: ['Personal', 'Alta, edicion y estado del personal.'],
     sitios: ['Sitios', 'Catalogo operativo y bloques de sitios.'],
     descansos: ['Descansos', 'Configuracion base y vista previa semanal.'],
-    rol: ['Rol Mensual', 'Propuesta diaria editable con bloques fijos.'],
+    rol: ['Rol Operativo', 'Asignacion diaria por periodo, disponibilidad y bloques.'],
     configuracion: ['Configuracion', 'Turnos, dias especiales y parametros operativos.'],
   }[seccionActiva];
 
@@ -591,7 +591,7 @@ function App() {
           {seccionActiva === 'personal' && <PersonalPanel formulario={formulario} turnos={turnos} personal={personal} editandoId={editandoId} guardando={guardando} actualizarCampo={actualizarCampo} guardarPersonal={guardarPersonal} limpiarFormulario={limpiarFormulario} editarPersona={editarPersona} eliminarPersona={async (persona) => { await eliminarPersonal(persona.id); if (editandoId === persona.id) limpiarFormulario(); await cargarDatos(); }} />}
           {seccionActiva === 'sitios' && <SitiosPanel sitios={sitios} setSitios={setSitios} />}
           {seccionActiva === 'descansos' && <DescansosPanel personal={personalActivo} turno={turnoActivo} rotacion={rotacion} />}
-          {seccionActiva === 'rol' && <RolPanel rolMensual={rolMensual} rolDiario={rolDiario} personal={personal} turno={turnoActivo} bloques={bloquesOrdenados} generarPropuestaRol={generarPropuestaRol} confirmarRol={confirmarRol} guardando={guardando} />}
+          {seccionActiva === 'rol' && <RolOperativoPanel personal={personalActivo} rotacion={rotacion} />}
           {seccionActiva === 'configuracion' && <ConfiguracionPanel turnos={turnos} diasEspeciales={diasEspeciales} />}
           <footer>2026 Epsilon.net tecnologia <span>v1.1.0</span></footer>
         </main>
@@ -905,9 +905,130 @@ function RotacionPanel({ personal, rotacion }: { personal: Personal[]; rotacion:
   );
 }
 
-function RolPanel({ rolMensual, rolDiario, personal, turno, bloques, generarPropuestaRol, confirmarRol, guardando }: { rolMensual: RolMensual | null; rolDiario: RolDiario[]; personal: Personal[]; turno: Turno | null; bloques: Bloque[]; generarPropuestaRol: () => void; confirmarRol: () => void; guardando: boolean }) {
-  const mapa = new Map(personal.map((persona) => [persona.id, persona.nombre_completo]));
-  return <section className="panel table-panel"><PanelHeader title="Rol Mensual"><div className="button-row inline"><button className="primary-button" type="button" onClick={generarPropuestaRol} disabled={guardando}>Generar propuesta de rol</button><button className="secondary-button" type="button" onClick={confirmarRol} disabled={guardando || !rolMensual}>Confirmar rol final</button></div></PanelHeader><InfoBox text={`Turno ${turno?.nombre ?? 'sin turno'} ${formatearHorario(turno?.hora_inicio, turno?.hora_fin)}. La propuesta puede modificarse manualmente antes de confirmar.`} /><Table headers={['Fecha', 'Dia', 'Supervisor', ...bloques.slice(0, 5).map((bloque) => bloque.nombre), 'Cobertura', 'Falta', 'Nota', 'Acciones']}>{rolDiario.map((dia) => <tr key={dia.id}><td>{dia.fecha}</td><td>{dia.dia_semana}</td><td>{mapa.get(dia.supervisor_id ?? '') ?? '-'}</td><td>{mapa.get(dia.bloque_1_personal_id ?? '') ?? '-'}</td><td>{mapa.get(dia.bloque_2_personal_id ?? '') ?? '-'}</td><td>{mapa.get(dia.bloque_3_personal_id ?? '') ?? '-'}</td><td>{mapa.get(dia.bloque_4_personal_id ?? '') ?? '-'}</td><td>{mapa.get(dia.bloque_5_personal_id ?? '') ?? '-'}</td><td>{mapa.get(dia.cobertura_personal_id ?? '') ?? '-'}</td><td>{mapa.get(dia.falta_personal_id ?? '') ?? '-'}</td><td>{dia.motivo ?? dia.observaciones ?? '-'}</td><td><button className="secondary-button compact" type="button">Editar</button></td></tr>)}</Table>{!rolDiario.length && <p className="empty-state">Aun no hay propuesta guardada para este mes.</p>}</section>;
+function distribuirSitiosEnBloques(cantidadBloques: number) {
+  const sitios = bloquesSitiosBase.flatMap((bloque) => bloque.sitios);
+  return Array.from({ length: cantidadBloques }).map((_, index) => {
+    const inicio = Math.floor((sitios.length / cantidadBloques) * index);
+    const fin = Math.floor((sitios.length / cantidadBloques) * (index + 1));
+    return {
+      numero: index + 1,
+      nombre: `Bloque ${index + 1}`,
+      sitios: sitios.slice(inicio, fin),
+    };
+  });
+}
+
+function obtenerBloquesOperativos(dia: DiaSemana, monitoristasDisponibles: number) {
+  const bloquesDelDia = bloquesSitiosPorDia[dia];
+  if (bloquesDelDia.length === 4 || monitoristasDisponibles < 5) {
+    return bloquesDelDia.length === 4 ? bloquesDelDia : distribuirSitiosEnBloques(4);
+  }
+  return bloquesDelDia;
+}
+
+function fechaDelDiaEnPeriodo(periodo: { inicio: Date }, dia: DiaSemana) {
+  const index = DIAS_SEMANA.indexOf(dia);
+  return sumarDias(periodo.inicio, index);
+}
+
+function personaTrabajaEnFecha(persona: Personal, fecha: string, rotacion: ConfiguracionRotacion | null) {
+  const fechaInicioCiclo = fechaIsoLocal(inicioCicloDescansos);
+  return !personaDescansaEnFecha({ persona: { ...persona, fecha_inicio_ciclo: fechaInicioCiclo }, fecha, rotacion });
+}
+
+function RolOperativoPanel({ personal, rotacion }: { personal: Personal[]; rotacion: ConfiguracionRotacion | null }) {
+  const [periodoSeleccionado, setPeriodoSeleccionado] = useState(1);
+  const [diaSeleccionado, setDiaSeleccionado] = useState<DiaSemana>('Lunes');
+  const [ajustes, setAjustes] = useState<Record<string, string>>({});
+  const periodo = periodosDescansos.find((item) => item.numero === periodoSeleccionado) ?? periodosDescansos[0];
+  const fecha = fechaIsoLocal(fechaDelDiaEnPeriodo(periodo, diaSeleccionado));
+  const disponibles = personal.filter((persona) => personaTrabajaEnFecha(persona, fecha, rotacion));
+  const supervisoresDisponibles = disponibles.filter((persona) => persona.puesto === 'Supervisor');
+  const monitoristasDisponibles = disponibles.filter((persona) => persona.puesto === 'Monitorista');
+  const supervisorKey = `${periodoSeleccionado}-${diaSeleccionado}-supervisor`;
+  const supervisorPrincipalId = ajustes[supervisorKey] ?? supervisoresDisponibles[0]?.id ?? '';
+  const supervisorPrincipal = supervisoresDisponibles.find((persona) => persona.id === supervisorPrincipalId) ?? null;
+  const supervisoresApoyo = supervisoresDisponibles.filter((persona) => persona.id !== supervisorPrincipalId);
+  const bloquesOperativos = obtenerBloquesOperativos(diaSeleccionado, monitoristasDisponibles.length);
+  const personasParaBloque = [...monitoristasDisponibles, ...supervisoresApoyo];
+  const faltantes = Math.max(0, bloquesOperativos.length - personasParaBloque.length);
+
+  function asignadoPorDefecto(index: number) {
+    return personasParaBloque[index]?.id ?? '';
+  }
+
+  function nombrePersona(id: string) {
+    return personal.find((persona) => persona.id === id)?.nombre_completo ?? '-';
+  }
+
+  function actualizar(clave: string, valor: string) {
+    setAjustes((actual) => ({ ...actual, [clave]: valor }));
+  }
+
+  return (
+    <section className="panel table-panel">
+      <PanelHeader title="Rol operativo por periodo y dia">
+        <div className="period-controls">
+          <select value={periodoSeleccionado} onChange={(event) => setPeriodoSeleccionado(Number(event.target.value))}>
+            {periodosDescansos.map((item) => <option key={item.numero} value={item.numero}>{item.label}</option>)}
+          </select>
+          <select value={diaSeleccionado} onChange={(event) => setDiaSeleccionado(event.target.value as DiaSemana)}>
+            {DIAS_SEMANA.map((dia) => <option key={dia} value={dia}>{DIA_LABEL[dia]}</option>)}
+          </select>
+        </div>
+      </PanelHeader>
+      <InfoBox text="El sistema decide 4 o 5 bloques segun el personal disponible. Si faltan monitoristas, usa supervisor como apoyo y conserva un supervisor principal." />
+
+      <section className="role-summary-grid">
+        <InfoMetric label="Personal disponible" value={disponibles.length} />
+        <InfoMetric label="Monitoristas disponibles" value={monitoristasDisponibles.length} />
+        <InfoMetric label="Supervisores disponibles" value={supervisoresDisponibles.length} />
+        <InfoMetric label="Bloques del dia" value={bloquesOperativos.length} />
+        <InfoMetric label="Sitios cubiertos" value={bloquesOperativos.reduce((total, bloque) => total + bloque.sitios.length, 0)} />
+        <InfoMetric label="Faltantes" value={faltantes} />
+      </section>
+
+      <section className="rotation-controls">
+        <Field label="Supervisor del turno">
+          <select value={supervisorPrincipalId} onChange={(event) => actualizar(supervisorKey, event.target.value)}>
+            <option value="">Sin supervisor</option>
+            {supervisoresDisponibles.map((persona) => (
+              <option key={persona.id} value={persona.id}>{persona.nombre_completo}</option>
+            ))}
+          </select>
+        </Field>
+        <p className="muted-text">Fecha base del calculo: {fecha}. Supervisor principal: {supervisorPrincipal?.nombre_completo ?? 'sin asignar'}.</p>
+      </section>
+
+      <Table headers={['Bloque', 'Sitios cubiertos', 'Asignado', 'Tipo']}>
+        {bloquesOperativos.map((bloque, index) => {
+          const clave = `${periodoSeleccionado}-${diaSeleccionado}-bloque-${bloque.numero}`;
+          const asignadoId = ajustes[clave] ?? asignadoPorDefecto(index);
+          const asignado = personal.find((persona) => persona.id === asignadoId) ?? null;
+          return (
+            <tr key={bloque.numero}>
+              <td><strong>{bloque.nombre}</strong></td>
+              <td><div className="site-list-inline">{bloque.sitios.map((sitio) => <span key={sitio}>{sitio}</span>)}</div></td>
+              <td>
+                <select value={asignadoId} onChange={(event) => actualizar(clave, event.target.value)}>
+                  <option value="">Sin asignar</option>
+                  {personasParaBloque.map((persona) => (
+                    <option key={persona.id} value={persona.id}>{persona.nombre_completo}</option>
+                  ))}
+                </select>
+              </td>
+              <td>{asignado?.puesto === 'Supervisor' ? 'Supervisor como apoyo' : asignado ? 'Monitorista' : 'Falta cubrir'}</td>
+            </tr>
+          );
+        })}
+      </Table>
+
+      <section className="role-people-strip">
+        <strong>Descansan:</strong>
+        {personal.filter((persona) => !personaTrabajaEnFecha(persona, fecha, rotacion)).map((persona) => <span key={persona.id}>{persona.nombre_completo}</span>)}
+      </section>
+    </section>
+  );
 }
 
 function ConfiguracionPanel({ turnos, diasEspeciales }: { turnos: Turno[]; diasEspeciales: { id: string; dia_semana: DiaSemana; cantidad_supervisores: number; cantidad_monitoristas: number; activo: boolean }[] }) {

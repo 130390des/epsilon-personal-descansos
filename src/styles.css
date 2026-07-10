@@ -357,6 +357,13 @@ select {
   margin: 18px 0;
 }
 
+.role-summary-grid {
+  display: grid;
+  grid-template-columns: repeat(6, minmax(130px, 1fr));
+  gap: 12px;
+  padding: 16px 18px 4px;
+}
+
 .info-metric {
   border: 1px solid #dce5ee;
   border-radius: 8px;
@@ -691,6 +698,25 @@ select {
   padding: 3px 8px;
   font-size: 12px;
   font-weight: 650;
+}
+
+.role-people-strip {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 8px;
+  align-items: center;
+  padding: 14px 18px 18px;
+  color: #516078;
+}
+
+.role-people-strip span {
+  border: 1px solid #e1e7ee;
+  border-radius: 5px;
+  background: #edf0f3;
+  color: #596578;
+  padding: 4px 9px;
+  font-size: 12px;
+  font-weight: 750;
 }
 
 td input,
