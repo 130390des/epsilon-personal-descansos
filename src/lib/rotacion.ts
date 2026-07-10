@@ -31,6 +31,46 @@ export function rotarDia(dia: DiaSemana, desplazamiento: number): DiaSemana {
   return DIAS_SEMANA[(indice + desplazamiento + total) % total];
 }
 
+export function sumarDias(fecha: Date, dias: number) {
+  const resultado = new Date(fecha);
+  resultado.setDate(fecha.getDate() + dias);
+  resultado.setHours(0, 0, 0, 0);
+  return resultado;
+}
+
+export function fechaIsoLocal(fecha: Date) {
+  return `${fecha.getFullYear()}-${String(fecha.getMonth() + 1).padStart(2, '0')}-${String(fecha.getDate()).padStart(2, '0')}`;
+}
+
+export function obtenerLunesDeSemana(fecha: Date) {
+  const diaSemana = (fecha.getDay() + 6) % 7;
+  return sumarDias(fecha, -diaSemana);
+}
+
+export function formatearFechaCorta(fecha: Date) {
+  return fecha.toLocaleDateString('es-MX', { day: 'numeric', month: 'short' });
+}
+
+export function obtenerInicioPeriodoRotacion({
+  fechaInicioCiclo,
+  fechaObjetivo,
+  semanasPorCiclo = 4,
+}: {
+  fechaInicioCiclo: string;
+  fechaObjetivo: string;
+  semanasPorCiclo?: number;
+}) {
+  const inicio = new Date(`${fechaInicioCiclo}T00:00:00`);
+  const objetivo = new Date(`${fechaObjetivo}T00:00:00`);
+  const diasPorPeriodo = semanasPorCiclo * 7;
+  const diferenciaDias = Math.max(
+    0,
+    Math.floor((objetivo.getTime() - inicio.getTime()) / 86_400_000),
+  );
+  const periodosCompletos = Math.floor(diferenciaDias / diasPorPeriodo);
+  return sumarDias(inicio, periodosCompletos * diasPorPeriodo);
+}
+
 export function calcularDescansosRotados({
   descansoBase1,
   descansoBase2,
