@@ -755,7 +755,7 @@ function DescansosPanel({ personal, turno, rotacion }: { personal: Personal[]; t
                 return (
                   <td key={dia}>
                     <span className={`schedule-chip ${descansa ? 'rest' : 'work'}`}>
-                      {descansa ? 'Descanso' : ''}
+                      {descansa ? 'Descanso' : 'Activo'}
                     </span>
                   </td>
                 );

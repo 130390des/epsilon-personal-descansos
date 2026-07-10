@@ -888,8 +888,9 @@ th {
 }
 
 .schedule-chip.work {
-  min-width: 0;
-  background: transparent;
+  color: #3f6f00;
+  background: #edf8df;
+  border: 1px solid #d1ecad;
 }
 
 .schedule-chip.rest {
