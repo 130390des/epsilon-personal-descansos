@@ -726,50 +726,53 @@ function SitiosPanel({ sitios, setSitios }: { sitios: SitioItem[]; setSitios: (s
 
 function DescansosPanel({ personal, turno, rotacion }: { personal: Personal[]; turno: Turno | null; rotacion: ConfiguracionRotacion | null }) {
   const [periodoSeleccionado, setPeriodoSeleccionado] = useState(1);
+  const [semanaSeleccionada, setSemanaSeleccionada] = useState(1);
   const semanasPorCiclo = rotacion?.semanas_por_ciclo ?? 4;
   const periodoActivo = periodosDescansos.find((periodo) => periodo.numero === periodoSeleccionado) ?? periodosDescansos[0];
   const fechaInicioCiclo = fechaIsoLocal(inicioCicloDescansos);
+  const inicioSemana = sumarDias(periodoActivo.inicio, (semanaSeleccionada - 1) * 7);
+  const finSemana = sumarDias(inicioSemana, 6);
 
   return (
     <section className="panel table-panel">
       <PanelHeader title="Descansos por periodo de rotacion">
-        <select value={periodoSeleccionado} onChange={(event) => setPeriodoSeleccionado(Number(event.target.value))}>
-          {periodosDescansos.map((periodo) => (
-            <option key={periodo.numero} value={periodo.numero}>{periodo.label}</option>
-          ))}
-        </select>
+        <div className="period-controls">
+          <select value={periodoSeleccionado} onChange={(event) => { setPeriodoSeleccionado(Number(event.target.value)); setSemanaSeleccionada(1); }}>
+            {periodosDescansos.map((periodo) => (
+              <option key={periodo.numero} value={periodo.numero}>{periodo.label}</option>
+            ))}
+          </select>
+          <select value={semanaSeleccionada} onChange={(event) => setSemanaSeleccionada(Number(event.target.value))}>
+            {Array.from({ length: semanasPorCiclo }).map((_, index) => {
+              const inicio = sumarDias(periodoActivo.inicio, index * 7);
+              const fin = sumarDias(inicio, 6);
+              return <option key={index + 1} value={index + 1}>Semana {index + 1}: {formatearFechaCorta(inicio)} al {formatearFechaCorta(fin)}</option>;
+            })}
+          </select>
+        </div>
       </PanelHeader>
       <InfoBox text={`Cada ${semanasPorCiclo} semanas se recorre 1 dia a todo el personal. El descanso base se toma de Personal.`} />
       <div className="week-block">
-        <h3>Periodo {periodoActivo.numero}: {formatearFechaCorta(periodoActivo.inicio)} al {formatearFechaCorta(periodoActivo.fin)}</h3>
-          {Array.from({ length: semanasPorCiclo }).map((_, semana) => {
-            const inicioSemana = sumarDias(periodoActivo.inicio, semana * 7);
-            const finSemana = sumarDias(inicioSemana, 6);
-            return (
-              <div key={`${periodoActivo.numero}-${semana}`} className="week-block nested-week">
-                <h4>{formatearFechaCorta(inicioSemana)} al {formatearFechaCorta(finSemana)}</h4>
-                <Table headers={['Personal', ...DIAS_SEMANA.map((dia) => DIA_LABEL[dia])]}>
-                  {personal.map((persona) => (
-                    <tr key={`${persona.id}-${periodoActivo.numero}-${semana}`}>
-                      <td>{persona.nombre_completo}</td>
-                      {DIAS_SEMANA.map((dia, index) => {
-                        const fecha = sumarDias(inicioSemana, index);
-                        const iso = fechaIsoLocal(fecha);
-                        const descansa = personaDescansaEnFecha({ persona: { ...persona, fecha_inicio_ciclo: fechaInicioCiclo }, fecha: iso, rotacion });
-                        return (
-                          <td key={dia}>
-                            <span className={`schedule-chip ${descansa ? 'rest' : 'work'}`}>
-                              {descansa ? 'Descanso' : formatearHorario(persona.turnos?.hora_inicio ?? turno?.hora_inicio, persona.turnos?.hora_fin ?? turno?.hora_fin)}
-                            </span>
-                          </td>
-                        );
-                      })}
-                    </tr>
-                  ))}
-                </Table>
-              </div>
-            );
-          })}
+        <h3>Periodo {periodoActivo.numero} / Semana {semanaSeleccionada}: {formatearFechaCorta(inicioSemana)} al {formatearFechaCorta(finSemana)}</h3>
+        <Table headers={['Personal', ...DIAS_SEMANA.map((dia) => DIA_LABEL[dia])]}>
+          {personal.map((persona) => (
+            <tr key={`${persona.id}-${periodoActivo.numero}-${semanaSeleccionada}`}>
+              <td>{persona.nombre_completo}</td>
+              {DIAS_SEMANA.map((dia, index) => {
+                const fecha = sumarDias(inicioSemana, index);
+                const iso = fechaIsoLocal(fecha);
+                const descansa = personaDescansaEnFecha({ persona: { ...persona, fecha_inicio_ciclo: fechaInicioCiclo }, fecha: iso, rotacion });
+                return (
+                  <td key={dia}>
+                    <span className={`schedule-chip ${descansa ? 'rest' : 'work'}`}>
+                      {descansa ? 'Descanso' : ''}
+                    </span>
+                  </td>
+                );
+              })}
+            </tr>
+          ))}
+        </Table>
       </div>
     </section>
   );

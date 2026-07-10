@@ -412,6 +412,18 @@ select {
   gap: 14px;
 }
 
+.period-controls {
+  display: flex;
+  align-items: center;
+  gap: 10px;
+  flex-wrap: wrap;
+  justify-content: flex-end;
+}
+
+.period-controls select {
+  min-width: 250px;
+}
+
 .field-row {
   display: grid;
   grid-template-columns: 195px minmax(0, 1fr);
@@ -876,8 +888,8 @@ th {
 }
 
 .schedule-chip.work {
-  color: #0057a8;
-  background: linear-gradient(180deg, #d8eaff, #c7e0ff);
+  min-width: 0;
+  background: transparent;
 }
 
 .schedule-chip.rest {
