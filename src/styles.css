@@ -1036,8 +1036,14 @@ footer span {
   .stats-grid,
   .quick-grid,
   .work-grid,
-  .bottom-grid {
+  .bottom-grid,
+  .role-summary-grid {
     grid-template-columns: 1fr;
+  }
+
+  .block-site-grid,
+  .sites-grid {
+    grid-template-columns: repeat(2, minmax(240px, 1fr));
   }
 }
 
@@ -1049,19 +1055,48 @@ footer span {
   .sidebar {
     position: static;
     height: auto;
+    border-right: 0;
+    border-bottom: 1px solid #e3eaf2;
   }
 
   .brand {
-    height: auto;
+    height: 86px;
+    padding: 16px 18px;
+  }
+
+  .brand img {
+    width: min(190px, 100%);
   }
 
   .nav-list {
-    grid-template-columns: repeat(2, minmax(0, 1fr));
-    padding: 10px;
+    display: flex;
+    gap: 8px;
+    overflow-x: auto;
+    padding: 10px 12px 14px;
+    scroll-snap-type: x proximity;
   }
 
   .nav-item {
+    min-width: 136px;
+    min-height: 46px;
     padding: 0 12px;
+    gap: 9px;
+    border-left: 0;
+    border-bottom: 4px solid transparent;
+    border-radius: 7px;
+    justify-content: center;
+    scroll-snap-align: start;
+    font-size: 13px;
+  }
+
+  .nav-item.active {
+    border-left-color: transparent;
+    border-bottom-color: #7ec900;
+  }
+
+  .nav-item svg {
+    width: 18px;
+    height: 18px;
   }
 
   .admin-card {
@@ -1078,6 +1113,15 @@ footer span {
   .table-tools {
     align-items: stretch;
     flex-direction: column;
+    gap: 10px;
+  }
+
+  .topbar h1 {
+    font-size: 30px;
+  }
+
+  .topbar p {
+    font-size: 15px;
   }
 
   .turno-select,
@@ -1088,6 +1132,18 @@ footer span {
 
   .stats-grid {
     grid-template-columns: 1fr;
+    gap: 12px;
+  }
+
+  .stat-card {
+    min-height: 88px;
+    padding: 16px;
+    gap: 14px;
+  }
+
+  .stat-icon {
+    width: 48px;
+    height: 48px;
   }
 
   .field-row,
@@ -1096,7 +1152,137 @@ footer span {
     grid-template-columns: 1fr;
   }
 
+  .panel-heading {
+    padding: 12px 14px;
+  }
+
+  .period-controls {
+    justify-content: stretch;
+  }
+
+  .period-controls select,
+  .panel-heading select {
+    min-width: 0;
+    width: 100%;
+  }
+
   .button-row.inline {
     flex-direction: column;
+  }
+
+  .sites-grid,
+  .block-site-grid,
+  .role-summary-grid,
+  .summary-grid,
+  .quick-grid {
+    grid-template-columns: 1fr;
+  }
+
+  .site-add-row {
+    grid-template-columns: 1fr;
+    padding: 12px 14px 0;
+  }
+
+  .sites-grid,
+  .block-site-grid {
+    padding: 14px;
+  }
+
+  .block-site-card {
+    padding: 12px;
+  }
+
+  .role-summary-grid {
+    padding: 14px;
+  }
+
+  .rotation-controls,
+  .week-block,
+  .role-people-strip {
+    padding-left: 14px;
+    padding-right: 14px;
+  }
+
+  .info-note {
+    align-items: flex-start;
+    font-size: 12px;
+    line-height: 1.4;
+  }
+
+  .site-list-inline {
+    min-width: 0;
+    max-width: none;
+    width: min(660px, calc(100vw - 72px));
+  }
+
+  .site-list-inline span {
+    white-space: normal;
+  }
+
+  th,
+  td {
+    padding: 9px 10px;
+    font-size: 13px;
+  }
+
+  td input,
+  td select {
+    min-width: 170px;
+  }
+
+  .schedule-chip {
+    min-width: 76px;
+    font-size: 12px;
+  }
+
+  footer {
+    display: block;
+    text-align: center;
+    padding-bottom: 18px;
+  }
+
+  footer span {
+    display: block;
+    margin-left: 0;
+    margin-top: 4px;
+  }
+}
+
+@media (max-width: 520px) {
+  .main-content {
+    padding: 14px 10px;
+  }
+
+  .nav-item {
+    min-width: 118px;
+    font-size: 12px;
+  }
+
+  .topbar h1 {
+    font-size: 27px;
+  }
+
+  .panel-title {
+    font-size: 16px;
+  }
+
+  .field-row {
+    gap: 6px;
+  }
+
+  .info-metric {
+    padding: 12px;
+  }
+
+  .info-metric strong {
+    font-size: 23px;
+  }
+
+  .table-scroll {
+    margin: 0;
+  }
+
+  .site-list-inline {
+    width: min(560px, calc(100vw - 56px));
   }
 }
