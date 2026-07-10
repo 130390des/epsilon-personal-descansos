@@ -245,6 +245,58 @@ const bloquesSitiosBase = [
   },
 ];
 
+const bloquesSitiosMiercolesJueves = [
+  {
+    numero: 1,
+    nombre: 'Bloque 1',
+    sitios: [
+      ...bloquesSitiosBase[0].sitios,
+      'EC Cempoala',
+      'VS San José Salinas',
+    ],
+  },
+  {
+    numero: 2,
+    nombre: 'Bloque 2',
+    sitios: [
+      ...bloquesSitiosBase[1].sitios,
+      'EC Cárdenas',
+      'ERM Ojo Caliente',
+      'TRED Cima de Togo',
+    ],
+  },
+  {
+    numero: 3,
+    nombre: 'Bloque 3',
+    sitios: [
+      ...bloquesSitiosBase[2].sitios,
+      'EC Pátzcuaro',
+      'VS Mezcalapa',
+      'ERM Caseta General Pajaritos',
+    ],
+  },
+  {
+    numero: 4,
+    nombre: 'Bloque 4',
+    sitios: [
+      ...bloquesSitiosBase[3].sitios,
+      'TRED Tecamachalco',
+      'EM Y TRED Castaños',
+      'VS Muñoz',
+    ],
+  },
+];
+
+const bloquesSitiosPorDia: Record<DiaSemana, typeof bloquesSitiosBase> = {
+  Lunes: bloquesSitiosBase,
+  Martes: bloquesSitiosBase,
+  Miercoles: bloquesSitiosMiercolesJueves,
+  Jueves: bloquesSitiosMiercolesJueves,
+  Viernes: bloquesSitiosBase,
+  Sabado: bloquesSitiosBase,
+  Domingo: bloquesSitiosBase,
+};
+
 const semanasTrabajo: SemanaTrabajo[] = Array.from({ length: 24 }).map((_, index) => {
   const inicio = sumarDias(new Date('2026-07-20T00:00:00'), index * 7);
   return { numero: index + 1, inicio, fin: sumarDias(inicio, 6) };
@@ -662,7 +714,9 @@ function PersonalPanel({
 
 function SitiosPanel({ sitios, setSitios }: { sitios: SitioItem[]; setSitios: (sitios: SitioItem[]) => void }) {
   const [nuevoSitio, setNuevoSitio] = useState('');
+  const [diaBloques, setDiaBloques] = useState<DiaSemana>('Lunes');
   const seleccionados = sitios.filter((sitio) => sitio.seleccionado).length;
+  const bloquesDelDia = bloquesSitiosPorDia[diaBloques];
 
   function actualizarSitio(id: string, cambios: Partial<SitioItem>) {
     setSitios(sitios.map((sitio) => sitio.id === id ? { ...sitio, ...cambios } : sitio));
@@ -707,10 +761,14 @@ function SitiosPanel({ sitios, setSitios }: { sitios: SitioItem[]; setSitios: (s
       </section>
 
       <section className="panel table-panel">
-        <PanelHeader title="Vista de bloques por sitios" />
-        <InfoBox text="Estos bloques son la base para asignar monitoristas por semana en Rotacion mensual." />
+        <PanelHeader title={`Vista de bloques por sitios - ${DIA_LABEL[diaBloques]}`}>
+          <select value={diaBloques} onChange={(event) => setDiaBloques(event.target.value as DiaSemana)}>
+            {DIAS_SEMANA.map((dia) => <option key={dia} value={dia}>{DIA_LABEL[dia]}</option>)}
+          </select>
+        </PanelHeader>
+        <InfoBox text="Los bloques cambian por dia de la semana. Miercoles y jueves redistribuyen los sitios del bloque 5 entre los bloques 1 al 4." />
         <div className="block-site-grid">
-          {bloquesSitiosBase.map((bloque) => (
+          {bloquesDelDia.map((bloque) => (
             <article key={bloque.numero} className="block-site-card">
               <h3>{bloque.nombre}</h3>
               <ul>
