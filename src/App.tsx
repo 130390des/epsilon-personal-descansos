@@ -41,7 +41,16 @@ import {
   obtenerTurnos,
 } from './services/epsilonService';
 import { generarPropuestaRotacionMensual, generarRolMensual, ordenarBloques, personaDescansaEnFecha } from './lib/rolMensual';
-import { DIA_LABEL, DIAS_SEMANA, formatearHorario } from './lib/rotacion';
+import {
+  DIA_LABEL,
+  DIAS_SEMANA,
+  fechaIsoLocal,
+  formatearFechaCorta,
+  formatearHorario,
+  obtenerInicioPeriodoRotacion,
+  obtenerLunesDeSemana,
+  sumarDias,
+} from './lib/rotacion';
 import { supabaseConfigured } from './lib/supabase';
 import type {
   AsignacionBloqueMensual,
@@ -77,10 +86,7 @@ type MenuId = (typeof menuItems)[number]['id'];
 const hoy = new Date();
 const mesActual = hoy.getMonth() + 1;
 const anioActual = hoy.getFullYear();
-const inicioSemanaActual = new Date(hoy);
-const diaSemanaActual = (hoy.getDay() + 6) % 7;
-inicioSemanaActual.setDate(hoy.getDate() - diaSemanaActual);
-inicioSemanaActual.setHours(0, 0, 0, 0);
+const fechaHoyIso = fechaIsoLocal(hoy);
 
 const estadoInicial: PersonalInput = {
   nombre_completo: '',
@@ -372,7 +378,7 @@ function App() {
           {seccionActiva === 'descansos' && <DescansosPanel personal={personalActivo} turno={turnoActivo} rotacion={rotacion} />}
           {seccionActiva === 'bloques' && <BloquesPanel bloques={bloquesOrdenados} setBloques={setBloques} guardarBloque={guardarBloque} guardando={guardando} />}
           {seccionActiva === 'coberturas' && <CoberturasPanel mes={mes} anio={anio} personal={personalActivo} coberturas={coberturas} guardarCobertura={guardarCobertura} />}
-          {seccionActiva === 'rotacion' && <RotacionPanel bloques={bloquesOrdenados} personal={personalActivo} propuesta={propuestaRotacion} setPropuesta={setPropuestaRotacion} guardarRotacion={guardarRotacion} guardando={guardando} />}
+          {seccionActiva === 'rotacion' && <RotacionPanel mes={mes} anio={anio} bloques={bloquesOrdenados} personal={personalActivo} propuesta={propuestaRotacion} setPropuesta={setPropuestaRotacion} guardarRotacion={guardarRotacion} guardando={guardando} />}
           {seccionActiva === 'rol' && <RolPanel rolMensual={rolMensual} rolDiario={rolDiario} personal={personal} turno={turnoActivo} bloques={bloquesOrdenados} generarPropuestaRol={generarPropuestaRol} confirmarRol={confirmarRol} guardando={guardando} />}
           {seccionActiva === 'reportes' && <SimplePanel title="Reportes" text="La estructura de Supabase ya separa rol mensual y rol diario para exportar a Excel o PDF en una siguiente fase." />}
           {seccionActiva === 'configuracion' && <ConfiguracionPanel turnos={turnos} diasEspeciales={diasEspeciales} />}
@@ -487,8 +493,65 @@ function PersonalPanel({
 }
 
 function DescansosPanel({ personal, turno, rotacion }: { personal: Personal[]; turno: Turno | null; rotacion: ConfiguracionRotacion | null }) {
-  const [semanas, setSemanas] = useState(1);
-  return <section className="panel table-panel"><PanelHeader title="Vista previa semanal / Turno matutino"><select value={semanas} onChange={(event) => setSemanas(Number(event.target.value))}><option value={1}>Semana actual</option><option value={2}>Semana siguiente</option><option value={4}>Proximas 4 semanas</option></select></PanelHeader><InfoBox text="La semana actual muestra los descansos base capturados en Personal. La rotacion se aplica sobre semanas completas." />{Array.from({ length: semanas }).map((_, semana) => <div key={semana} className="week-block"><h3>Semana {semana + 1}</h3><Table headers={['Personal', ...DIAS_SEMANA.map((dia) => DIA_LABEL[dia])]}>{personal.map((persona) => <tr key={`${persona.id}-${semana}`}><td>{persona.nombre_completo}</td>{DIAS_SEMANA.map((dia, index) => { const fecha = new Date(inicioSemanaActual); fecha.setDate(inicioSemanaActual.getDate() + semana * 7 + index); const iso = fecha.toISOString().slice(0, 10); const descansa = personaDescansaEnFecha({ persona, fecha: iso, rotacion }); return <td key={dia}><span className={`schedule-chip ${descansa ? 'rest' : 'work'}`}>{descansa ? 'Descanso' : formatearHorario(persona.turnos?.hora_inicio ?? turno?.hora_inicio, persona.turnos?.hora_fin ?? turno?.hora_fin)}</span></td>; })}</tr>)}</Table></div>)}</section>;
+  const [periodos, setPeriodos] = useState(1);
+  const semanasPorCiclo = rotacion?.semanas_por_ciclo ?? 4;
+  const fechaInicioCiclo = personal.find((persona) => persona.fecha_inicio_ciclo)?.fecha_inicio_ciclo ?? estadoInicial.fecha_inicio_ciclo ?? fechaHoyIso;
+  const inicioPeriodoActual = obtenerInicioPeriodoRotacion({
+    fechaInicioCiclo,
+    fechaObjetivo: fechaHoyIso,
+    semanasPorCiclo,
+  });
+  const periodosVisibles = Array.from({ length: periodos }).map((_, periodo) => {
+    const inicio = sumarDias(inicioPeriodoActual, periodo * semanasPorCiclo * 7);
+    const fin = sumarDias(inicio, semanasPorCiclo * 7 - 1);
+    return { periodo, inicio, fin };
+  });
+
+  return (
+    <section className="panel table-panel">
+      <PanelHeader title="Descansos por periodo de rotacion">
+        <select value={periodos} onChange={(event) => setPeriodos(Number(event.target.value))}>
+          <option value={1}>Periodo actual</option>
+          <option value={2}>Periodo actual y siguiente</option>
+          <option value={3}>Proximos 3 periodos</option>
+        </select>
+      </PanelHeader>
+      <InfoBox text={`Cada ${semanasPorCiclo} semanas se recorre 1 dia a todo el personal. El descanso base se toma de Personal.`} />
+      {periodosVisibles.map(({ periodo, inicio, fin }) => (
+        <div key={periodo} className="week-block">
+          <h3>Periodo {periodo + 1}: {formatearFechaCorta(inicio)} al {formatearFechaCorta(fin)}</h3>
+          {Array.from({ length: semanasPorCiclo }).map((_, semana) => {
+            const inicioSemana = sumarDias(inicio, semana * 7);
+            const finSemana = sumarDias(inicioSemana, 6);
+            return (
+              <div key={`${periodo}-${semana}`} className="week-block nested-week">
+                <h4>{formatearFechaCorta(inicioSemana)} al {formatearFechaCorta(finSemana)}</h4>
+                <Table headers={['Personal', ...DIAS_SEMANA.map((dia) => DIA_LABEL[dia])]}>
+                  {personal.map((persona) => (
+                    <tr key={`${persona.id}-${periodo}-${semana}`}>
+                      <td>{persona.nombre_completo}</td>
+                      {DIAS_SEMANA.map((dia, index) => {
+                        const fecha = sumarDias(inicioSemana, index);
+                        const iso = fechaIsoLocal(fecha);
+                        const descansa = personaDescansaEnFecha({ persona, fecha: iso, rotacion });
+                        return (
+                          <td key={dia}>
+                            <span className={`schedule-chip ${descansa ? 'rest' : 'work'}`}>
+                              {descansa ? 'Descanso' : formatearHorario(persona.turnos?.hora_inicio ?? turno?.hora_inicio, persona.turnos?.hora_fin ?? turno?.hora_fin)}
+                            </span>
+                          </td>
+                        );
+                      })}
+                    </tr>
+                  ))}
+                </Table>
+              </div>
+            );
+          })}
+        </div>
+      ))}
+    </section>
+  );
 }
 
 function BloquesPanel({ bloques, setBloques, guardarBloque, guardando }: { bloques: Bloque[]; setBloques: (bloques: Bloque[]) => void; guardarBloque: (bloque: Bloque) => void; guardando: boolean }) {
@@ -501,11 +564,80 @@ function CoberturasPanel({ mes, anio, personal, coberturas, guardarCobertura }: 
   return <section className="panel padded"><PanelTitle>Coberturas Mensuales</PanelTitle><p className="muted-text">Mes {mes} / {anio}</p>{(['Cobertura principal', 'Cobertura secundaria'] as const).map((rol) => <Field key={rol} label={rol}><select value={coberturas.find((item) => item.rol_cobertura === rol)?.personal_id ?? ''} onChange={(event) => guardarCobertura(rol, event.target.value || null)}><option value="">Sin asignar</option>{disponibles.map((persona) => <option key={persona.id} value={persona.id}>{persona.nombre_completo}</option>)}</select></Field>)}<InfoBox text="La cobertura puede rotarse y editarse manualmente cada mes." /></section>;
 }
 
-function RotacionPanel({ bloques, personal, propuesta, setPropuesta, guardarRotacion, guardando }: { bloques: Bloque[]; personal: Personal[]; propuesta: AsignacionBloqueMensualInput[]; setPropuesta: (p: AsignacionBloqueMensualInput[]) => void; guardarRotacion: (confirmar?: boolean) => void; guardando: boolean }) {
+function obtenerSemanasDelMes(mes: number, anio: number) {
+  const primeroMes = new Date(anio, mes - 1, 1);
+  const ultimoMes = new Date(anio, mes, 0);
+  const semanas: { inicio: Date; fin: Date }[] = [];
+  let inicio = obtenerLunesDeSemana(primeroMes);
+
+  while (inicio <= ultimoMes) {
+    const fin = sumarDias(inicio, 6);
+    semanas.push({ inicio, fin });
+    inicio = sumarDias(inicio, 7);
+  }
+
+  return semanas;
+}
+
+function rotarBloquePorSemana(bloqueId: string, bloques: Bloque[], semana: number) {
+  const index = bloques.findIndex((bloque) => bloque.id === bloqueId);
+  if (index < 0 || !bloques.length) return bloqueId;
+  return bloques[(index + semana) % bloques.length].id;
+}
+
+function RotacionPanel({ mes, anio, bloques, personal, propuesta, setPropuesta, guardarRotacion, guardando }: { mes: number; anio: number; bloques: Bloque[]; personal: Personal[]; propuesta: AsignacionBloqueMensualInput[]; setPropuesta: (p: AsignacionBloqueMensualInput[]) => void; guardarRotacion: (confirmar?: boolean) => void; guardando: boolean }) {
   const mapaPersonal = new Map(personal.map((persona) => [persona.id, persona]));
   const mapaBloques = new Map(bloques.map((bloque) => [bloque.id, bloque]));
+  const semanasMes = useMemo(() => obtenerSemanasDelMes(mes, anio), [mes, anio]);
+  const [ajustesSemanales, setAjustesSemanales] = useState<Record<string, string>>({});
   function update(personalId: string, bloqueId: string) { setPropuesta(propuesta.map((item) => item.personal_id === personalId ? { ...item, bloque_id: bloqueId, observaciones: item.bloque_mes_anterior_id === bloqueId ? 'Repite bloque anterior por ajuste manual.' : item.observaciones } : item)); }
-  return <section className="panel table-panel"><PanelHeader title="Rotacion Mensual de Bloques"><div className="button-row inline"><button className="secondary-button" type="button" onClick={() => guardarRotacion(false)} disabled={guardando}>Guardar cambios</button><button className="primary-button" type="button" onClick={() => guardarRotacion(true)} disabled={guardando}>Confirmar rotacion mensual</button></div></PanelHeader><InfoBox text="El rol de bloques es mensual por monitorista. No es por hora ni por dia individual." /><Table headers={['Monitorista', 'Bloque del mes anterior', 'Bloque asignado del mes actual', 'Mes siguiente sugerido', 'Estado']}>{propuesta.map((item) => <tr key={item.personal_id}><td>{mapaPersonal.get(item.personal_id)?.nombre_completo}</td><td>{mapaBloques.get(item.bloque_mes_anterior_id ?? '')?.nombre ?? 'Sin anterior'}</td><td><select value={item.bloque_id} onChange={(event) => update(item.personal_id, event.target.value)}>{bloques.map((bloque) => <option key={bloque.id} value={bloque.id}>{bloque.nombre}</option>)}</select></td><td>{mapaBloques.get(item.bloque_siguiente_sugerido_id ?? '')?.nombre ?? '-'}</td><td>{item.bloque_mes_anterior_id === item.bloque_id ? 'Repite: requiere confirmacion manual' : 'Sugerido'}</td></tr>)}</Table></section>;
+  function updateSemana(personalId: string, semana: number, bloqueId: string) {
+    setAjustesSemanales((actual) => ({ ...actual, [`${personalId}-${semana}`]: bloqueId }));
+  }
+
+  return (
+    <section className="panel table-panel">
+      <PanelHeader title="Rotacion Mensual de Bloques">
+        <div className="button-row inline">
+          <button className="secondary-button" type="button" onClick={() => guardarRotacion(false)} disabled={guardando}>Guardar cambios</button>
+          <button className="primary-button" type="button" onClick={() => guardarRotacion(true)} disabled={guardando}>Confirmar rotacion mensual</button>
+        </div>
+      </PanelHeader>
+      <InfoBox text="El rol de bloques es mensual por monitorista. Abajo se arma automaticamente por semana y se puede ajustar antes de confirmar." />
+      <Table headers={['Monitorista', 'Bloque del mes anterior', 'Bloque base del mes', 'Mes siguiente sugerido', 'Estado']}>
+        {propuesta.map((item) => (
+          <tr key={item.personal_id}>
+            <td>{mapaPersonal.get(item.personal_id)?.nombre_completo}</td>
+            <td>{mapaBloques.get(item.bloque_mes_anterior_id ?? '')?.nombre ?? 'Sin anterior'}</td>
+            <td><select value={item.bloque_id} onChange={(event) => update(item.personal_id, event.target.value)}>{bloques.map((bloque) => <option key={bloque.id} value={bloque.id}>{bloque.nombre}</option>)}</select></td>
+            <td>{mapaBloques.get(item.bloque_siguiente_sugerido_id ?? '')?.nombre ?? '-'}</td>
+            <td>{item.bloque_mes_anterior_id === item.bloque_id ? 'Repite: requiere confirmacion manual' : 'Sugerido'}</td>
+          </tr>
+        ))}
+      </Table>
+      <div className="week-block">
+        <h3>Bloques automaticos por semana</h3>
+        <Table headers={['Monitorista', ...semanasMes.map((semana) => `${formatearFechaCorta(semana.inicio)} - ${formatearFechaCorta(semana.fin)}`)]}>
+          {propuesta.map((item) => (
+            <tr key={`semanas-${item.personal_id}`}>
+              <td>{mapaPersonal.get(item.personal_id)?.nombre_completo}</td>
+              {semanasMes.map((semana, index) => {
+                const key = `${item.personal_id}-${index}`;
+                const bloqueId = ajustesSemanales[key] ?? rotarBloquePorSemana(item.bloque_id, bloques, index);
+                return (
+                  <td key={key}>
+                    <select value={bloqueId} onChange={(event) => updateSemana(item.personal_id, index, event.target.value)}>
+                      {bloques.map((bloque) => <option key={bloque.id} value={bloque.id}>{bloque.nombre}</option>)}
+                    </select>
+                  </td>
+                );
+              })}
+            </tr>
+          ))}
+        </Table>
+      </div>
+    </section>
+  );
 }
 
 function RolPanel({ rolMensual, rolDiario, personal, turno, bloques, generarPropuestaRol, confirmarRol, guardando }: { rolMensual: RolMensual | null; rolDiario: RolDiario[]; personal: Personal[]; turno: Turno | null; bloques: Bloque[]; generarPropuestaRol: () => void; confirmarRol: () => void; guardando: boolean }) {
