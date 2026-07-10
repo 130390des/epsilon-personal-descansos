@@ -47,7 +47,6 @@ import {
   fechaIsoLocal,
   formatearFechaCorta,
   formatearHorario,
-  obtenerInicioPeriodoRotacion,
   obtenerLunesDeSemana,
   sumarDias,
 } from './lib/rotacion';
@@ -86,7 +85,18 @@ type MenuId = (typeof menuItems)[number]['id'];
 const hoy = new Date();
 const mesActual = hoy.getMonth() + 1;
 const anioActual = hoy.getFullYear();
-const fechaHoyIso = fechaIsoLocal(hoy);
+
+const inicioCicloDescansos = new Date('2026-06-22T00:00:00');
+const periodosDescansos = Array.from({ length: 7 }).map((_, index) => {
+  const inicio = sumarDias(inicioCicloDescansos, index * 28);
+  const fin = sumarDias(inicio, 27);
+  return {
+    numero: index + 1,
+    inicio,
+    fin,
+    label: `${index + 1} periodo: ${formatearFechaCorta(inicio)} al ${formatearFechaCorta(fin)}`,
+  };
+});
 
 const estadoInicial: PersonalInput = {
   nombre_completo: '',
@@ -370,8 +380,6 @@ function App() {
           {error && <div className="notice error">{error}</div>}
           {mensaje && <div className="notice success">{mensaje}</div>}
 
-          <MonthBar mes={mes} anio={anio} setMes={setMes} setAnio={setAnio} />
-
           {seccionActiva === 'inicio' && <Inicio supervisores={supervisores.length} monitoristas={monitoristas.length} bloques={bloquesOrdenados.length} horario={horarioActivo} rotacion={rotacion} cobertura={coberturas} onNavigate={setSeccionActiva} />}
           {seccionActiva === 'operacion' && <Operacion bloques={bloquesOrdenados} asignaciones={asignaciones} rolDiario={rolDiario} onGenerarRol={generarPropuestaRol} guardando={guardando} />}
           {seccionActiva === 'personal' && <PersonalPanel formulario={formulario} turnos={turnos} personal={personal} editandoId={editandoId} guardando={guardando} actualizarCampo={actualizarCampo} guardarPersonal={guardarPersonal} limpiarFormulario={limpiarFormulario} editarPersona={editarPersona} eliminarPersona={async (persona) => { await eliminarPersonal(persona.id); if (editandoId === persona.id) limpiarFormulario(); await cargarDatos(); }} />}
@@ -493,47 +501,37 @@ function PersonalPanel({
 }
 
 function DescansosPanel({ personal, turno, rotacion }: { personal: Personal[]; turno: Turno | null; rotacion: ConfiguracionRotacion | null }) {
-  const [periodos, setPeriodos] = useState(1);
+  const [periodoSeleccionado, setPeriodoSeleccionado] = useState(1);
   const semanasPorCiclo = rotacion?.semanas_por_ciclo ?? 4;
-  const fechaInicioCiclo = personal.find((persona) => persona.fecha_inicio_ciclo)?.fecha_inicio_ciclo ?? estadoInicial.fecha_inicio_ciclo ?? fechaHoyIso;
-  const inicioPeriodoActual = obtenerInicioPeriodoRotacion({
-    fechaInicioCiclo,
-    fechaObjetivo: fechaHoyIso,
-    semanasPorCiclo,
-  });
-  const periodosVisibles = Array.from({ length: periodos }).map((_, periodo) => {
-    const inicio = sumarDias(inicioPeriodoActual, periodo * semanasPorCiclo * 7);
-    const fin = sumarDias(inicio, semanasPorCiclo * 7 - 1);
-    return { periodo, inicio, fin };
-  });
+  const periodoActivo = periodosDescansos.find((periodo) => periodo.numero === periodoSeleccionado) ?? periodosDescansos[0];
+  const fechaInicioCiclo = fechaIsoLocal(inicioCicloDescansos);
 
   return (
     <section className="panel table-panel">
       <PanelHeader title="Descansos por periodo de rotacion">
-        <select value={periodos} onChange={(event) => setPeriodos(Number(event.target.value))}>
-          <option value={1}>Periodo actual</option>
-          <option value={2}>Periodo actual y siguiente</option>
-          <option value={3}>Proximos 3 periodos</option>
+        <select value={periodoSeleccionado} onChange={(event) => setPeriodoSeleccionado(Number(event.target.value))}>
+          {periodosDescansos.map((periodo) => (
+            <option key={periodo.numero} value={periodo.numero}>{periodo.label}</option>
+          ))}
         </select>
       </PanelHeader>
       <InfoBox text={`Cada ${semanasPorCiclo} semanas se recorre 1 dia a todo el personal. El descanso base se toma de Personal.`} />
-      {periodosVisibles.map(({ periodo, inicio, fin }) => (
-        <div key={periodo} className="week-block">
-          <h3>Periodo {periodo + 1}: {formatearFechaCorta(inicio)} al {formatearFechaCorta(fin)}</h3>
+      <div className="week-block">
+        <h3>Periodo {periodoActivo.numero}: {formatearFechaCorta(periodoActivo.inicio)} al {formatearFechaCorta(periodoActivo.fin)}</h3>
           {Array.from({ length: semanasPorCiclo }).map((_, semana) => {
-            const inicioSemana = sumarDias(inicio, semana * 7);
+            const inicioSemana = sumarDias(periodoActivo.inicio, semana * 7);
             const finSemana = sumarDias(inicioSemana, 6);
             return (
-              <div key={`${periodo}-${semana}`} className="week-block nested-week">
+              <div key={`${periodoActivo.numero}-${semana}`} className="week-block nested-week">
                 <h4>{formatearFechaCorta(inicioSemana)} al {formatearFechaCorta(finSemana)}</h4>
                 <Table headers={['Personal', ...DIAS_SEMANA.map((dia) => DIA_LABEL[dia])]}>
                   {personal.map((persona) => (
-                    <tr key={`${persona.id}-${periodo}-${semana}`}>
+                    <tr key={`${persona.id}-${periodoActivo.numero}-${semana}`}>
                       <td>{persona.nombre_completo}</td>
                       {DIAS_SEMANA.map((dia, index) => {
                         const fecha = sumarDias(inicioSemana, index);
                         const iso = fechaIsoLocal(fecha);
-                        const descansa = personaDescansaEnFecha({ persona, fecha: iso, rotacion });
+                        const descansa = personaDescansaEnFecha({ persona: { ...persona, fecha_inicio_ciclo: fechaInicioCiclo }, fecha: iso, rotacion });
                         return (
                           <td key={dia}>
                             <span className={`schedule-chip ${descansa ? 'rest' : 'work'}`}>
@@ -548,8 +546,7 @@ function DescansosPanel({ personal, turno, rotacion }: { personal: Personal[]; t
               </div>
             );
           })}
-        </div>
-      ))}
+      </div>
     </section>
   );
 }
