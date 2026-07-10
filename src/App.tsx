@@ -72,10 +72,7 @@ const menuItems = [
   { id: 'personal', label: 'Personal', icon: User },
   { id: 'sitios', label: 'Sitios', icon: MapPin },
   { id: 'descansos', label: 'Descansos', icon: CalendarDays },
-  { id: 'bloques', label: 'Bloques', icon: LayoutGrid },
-  { id: 'rotacion', label: 'Rotacion mensual', icon: RefreshCw },
   { id: 'rol', label: 'Rol mensual', icon: FileText },
-  { id: 'reportes', label: 'Reportes', icon: BarChart3 },
   { id: 'configuracion', label: 'Configuracion', icon: Settings },
 ] as const;
 
@@ -422,10 +419,7 @@ function App() {
     personal: ['Personal', 'Alta, edicion y estado del personal.'],
     sitios: ['Sitios', 'Catalogo operativo y bloques de sitios.'],
     descansos: ['Descansos', 'Configuracion base y vista previa semanal.'],
-    bloques: ['Bloques', 'Configuracion de bloques fijos por dia.'],
-    rotacion: ['Rotacion Mensual de Bloques', 'Rol de bloques mensual por monitorista.'],
     rol: ['Rol Mensual', 'Propuesta diaria editable con bloques fijos.'],
-    reportes: ['Reportes', 'Preparado para exportacion futura a Excel o PDF.'],
     configuracion: ['Configuracion', 'Turnos, dias especiales y parametros operativos.'],
   }[seccionActiva];
 
@@ -597,10 +591,7 @@ function App() {
           {seccionActiva === 'personal' && <PersonalPanel formulario={formulario} turnos={turnos} personal={personal} editandoId={editandoId} guardando={guardando} actualizarCampo={actualizarCampo} guardarPersonal={guardarPersonal} limpiarFormulario={limpiarFormulario} editarPersona={editarPersona} eliminarPersona={async (persona) => { await eliminarPersonal(persona.id); if (editandoId === persona.id) limpiarFormulario(); await cargarDatos(); }} />}
           {seccionActiva === 'sitios' && <SitiosPanel sitios={sitios} setSitios={setSitios} />}
           {seccionActiva === 'descansos' && <DescansosPanel personal={personalActivo} turno={turnoActivo} rotacion={rotacion} />}
-          {seccionActiva === 'bloques' && <BloquesPanel bloques={bloquesOrdenados} setBloques={setBloques} guardarBloque={guardarBloque} guardando={guardando} />}
-          {seccionActiva === 'rotacion' && <RotacionPanel personal={personalActivo} rotacion={rotacion} />}
           {seccionActiva === 'rol' && <RolPanel rolMensual={rolMensual} rolDiario={rolDiario} personal={personal} turno={turnoActivo} bloques={bloquesOrdenados} generarPropuestaRol={generarPropuestaRol} confirmarRol={confirmarRol} guardando={guardando} />}
-          {seccionActiva === 'reportes' && <SimplePanel title="Reportes" text="La estructura de Supabase ya separa rol mensual y rol diario para exportar a Excel o PDF en una siguiente fase." />}
           {seccionActiva === 'configuracion' && <ConfiguracionPanel turnos={turnos} diasEspeciales={diasEspeciales} />}
           <footer>2026 Epsilon.net tecnologia <span>v1.1.0</span></footer>
         </main>
