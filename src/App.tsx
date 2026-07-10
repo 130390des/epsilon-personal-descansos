@@ -10,10 +10,10 @@ import {
   Info,
   LayoutGrid,
   Loader2,
+  MapPin,
   RefreshCw,
   Save,
   Settings,
-  ShieldCheck,
   User,
   Users,
 } from 'lucide-react';
@@ -28,7 +28,6 @@ import {
   eliminarPersonal,
   existePersonalDuplicadoLocal,
   guardarAsignacionesBloquesMensual,
-  guardarCoberturaMensual,
   guardarPropuestaRolMensual,
   obtenerAsignacionBloquesMensual,
   obtenerBloques,
@@ -71,9 +70,9 @@ const menuItems = [
   { id: 'inicio', label: 'Inicio', icon: Home },
   { id: 'operacion', label: 'Operacion', icon: CheckSquare },
   { id: 'personal', label: 'Personal', icon: User },
+  { id: 'sitios', label: 'Sitios', icon: MapPin },
   { id: 'descansos', label: 'Descansos', icon: CalendarDays },
   { id: 'bloques', label: 'Bloques', icon: LayoutGrid },
-  { id: 'coberturas', label: 'Coberturas', icon: ShieldCheck },
   { id: 'rotacion', label: 'Rotacion mensual', icon: RefreshCw },
   { id: 'rol', label: 'Rol mensual', icon: FileText },
   { id: 'reportes', label: 'Reportes', icon: BarChart3 },
@@ -81,6 +80,8 @@ const menuItems = [
 ] as const;
 
 type MenuId = (typeof menuItems)[number]['id'];
+type SitioItem = { id: string; nombre: string; seleccionado: boolean };
+type SemanaTrabajo = { numero: number; inicio: Date; fin: Date };
 
 const hoy = new Date();
 const mesActual = hoy.getMonth() + 1;
@@ -97,6 +98,165 @@ const periodosDescansos = Array.from({ length: 7 }).map((_, index) => {
     label: `${index + 1} periodo: ${formatearFechaCorta(inicio)} al ${formatearFechaCorta(fin)}`,
   };
 });
+
+const sitiosBase = [
+  'Centro Alterno',
+  'EC Los Ramones',
+  'EC Medias Aguas',
+  'EC Reynosa Km.19',
+  'EM Ciudad Pemex',
+  'TRED Anzaldúas',
+  'TRED Cactus',
+  'TRED La Joya',
+  'TRED Y EC Donají',
+  'VT Vitroflotado',
+  'VS San José Bata',
+  'EC Cempoala',
+  'VS San José Salinas',
+  'EC Emiliano Zapata',
+  'EC Jáltipan',
+  'EM #2 Reynosa',
+  'EM Centro Sector',
+  'ERM Argüelles',
+  'ERM Catus al KM-100',
+  'ERM Xicoténcatl',
+  'Edificio Corporativo',
+  'TRED Tepeapulco',
+  'TRED Tierra Blanca',
+  'VS Tezontepec',
+  'EC Cárdenas',
+  'ERM Ojo Caliente',
+  'TRED Cima de Togo',
+  'EC Chinameca',
+  'EC Chávez',
+  'EM Santa Rosa',
+  'EM Terminal Avalos',
+  'ERM Entronque Minera Autlán',
+  'TED Santa Ana Viejo',
+  'TRD Los Robles',
+  'TRED Estero de Becerra',
+  'VS Tierra Blanca (TRD)',
+  'VT Herdez 1027+146',
+  'VT Nemak',
+  'EC Pátzcuaro',
+  'VS Mezcalapa',
+  'ERM Caseta General Pajaritos',
+  'EC Santa Catarina',
+  'EM Cactus',
+  'EM Gimsa',
+  'ERM Agua Dulce',
+  'ERM Apodaca',
+  'ERM Escobedo',
+  'ERM Paso del Toro',
+  'TRED Irolo',
+  'TRED Medias Aguas',
+  'VS Aeropuerto',
+  'VS Huamantla',
+  'TRED Tecamachalco',
+  'EM Y TRED Castaños',
+  'VS Muñoz',
+];
+
+const bloquesSitiosBase = [
+  {
+    numero: 1,
+    nombre: 'Bloque 1',
+    sitios: [
+      'Centro Alterno',
+      'EC Los Ramones',
+      'EC Medias Aguas',
+      'EC Reynosa Km.19',
+      'EM Ciudad Pemex',
+      'TRED Anzaldúas',
+      'TRED Cactus',
+      'TRED La Joya',
+      'TRED Y EC Donají',
+      'VT Vitroflotado',
+      'VS San José Bata',
+    ],
+  },
+  {
+    numero: 2,
+    nombre: 'Bloque 2',
+    sitios: [
+      'EC Emiliano Zapata',
+      'EC Jáltipan',
+      'EM #2 Reynosa',
+      'EM Centro Sector',
+      'ERM Argüelles',
+      'ERM Catus al KM-100',
+      'ERM Xicoténcatl',
+      'Edificio Corporativo',
+      'TRED Tepeapulco',
+      'TRED Tierra Blanca',
+      'VS Tezontepec',
+    ],
+  },
+  {
+    numero: 3,
+    nombre: 'Bloque 3',
+    sitios: [
+      'EC Chinameca',
+      'EC Chávez',
+      'EM Santa Rosa',
+      'EM Terminal Avalos',
+      'ERM Entronque Minera Autlán',
+      'TED Santa Ana Viejo',
+      'TRD Los Robles',
+      'TRED Estero de Becerra',
+      'VS Tierra Blanca (TRD)',
+      'VT Herdez 1027+146',
+      'VT Nemak',
+    ],
+  },
+  {
+    numero: 4,
+    nombre: 'Bloque 4',
+    sitios: [
+      'EC Santa Catarina',
+      'EM Cactus',
+      'EM Gimsa',
+      'ERM Agua Dulce',
+      'ERM Apodaca',
+      'ERM Escobedo',
+      'ERM Paso del Toro',
+      'TRED Irolo',
+      'TRED Medias Aguas',
+      'VS Aeropuerto',
+      'VS Huamantla',
+    ],
+  },
+  {
+    numero: 5,
+    nombre: 'Bloque 5',
+    sitios: [
+      'EC Cempoala',
+      'VS San José Salinas',
+      'EC Cárdenas',
+      'ERM Ojo Caliente',
+      'TRED Cima de Togo',
+      'EC Pátzcuaro',
+      'VS Mezcalapa',
+      'ERM Caseta General Pajaritos',
+      'TRED Tecamachalco',
+      'EM Y TRED Castaños',
+      'VS Muñoz',
+    ],
+  },
+];
+
+const semanasTrabajo: SemanaTrabajo[] = Array.from({ length: 24 }).map((_, index) => {
+  const inicio = sumarDias(new Date('2026-07-20T00:00:00'), index * 7);
+  return { numero: index + 1, inicio, fin: sumarDias(inicio, 6) };
+});
+
+function crearSitiosIniciales(): SitioItem[] {
+  return sitiosBase.map((nombre, index) => ({
+    id: `sitio-${index + 1}`,
+    nombre,
+    seleccionado: true,
+  }));
+}
 
 const estadoInicial: PersonalInput = {
   nombre_completo: '',
@@ -124,6 +284,15 @@ function App() {
   const [rolMensual, setRolMensual] = useState<RolMensual | null>(null);
   const [rolDiario, setRolDiario] = useState<RolDiario[]>([]);
   const [diasEspeciales, setDiasEspeciales] = useState<DiaEspecial[]>([]);
+  const [sitios, setSitios] = useState<SitioItem[]>(() => {
+    const guardados = window.localStorage.getItem('epsilon-sitios');
+    if (!guardados) return crearSitiosIniciales();
+    try {
+      return JSON.parse(guardados) as SitioItem[];
+    } catch {
+      return crearSitiosIniciales();
+    }
+  });
   const [formulario, setFormulario] = useState<PersonalInput>(estadoInicial);
   const [editandoId, setEditandoId] = useState<string | null>(null);
   const [mes, setMes] = useState(mesActual);
@@ -185,6 +354,10 @@ function App() {
     void cargarDatos();
   }, [mes, anio, turnoSeleccionado]);
 
+  useEffect(() => {
+    window.localStorage.setItem('epsilon-sitios', JSON.stringify(sitios));
+  }, [sitios]);
+
   const personalActivo = useMemo(() => personal.filter((persona) => persona.activo), [personal]);
   const supervisores = personalActivo.filter((persona) => persona.puesto === 'Supervisor');
   const monitoristas = personalActivo.filter((persona) => persona.puede_ser_monitorista);
@@ -193,11 +366,11 @@ function App() {
   const horarioActivo = formatearHorario(turnoActivo?.hora_inicio, turnoActivo?.hora_fin);
   const modulo = {
     inicio: ['Centro de Control Operativo', 'Plataforma de personal, descansos, bloques y rol mensual.'],
-    operacion: ['Operacion', 'Resumen operativo de cobertura, rotacion y rol.'],
+    operacion: ['Operacion', 'Resumen operativo de sitios, bloques y rol.'],
     personal: ['Personal', 'Alta, edicion y estado del personal.'],
+    sitios: ['Sitios', 'Catalogo operativo y bloques de sitios.'],
     descansos: ['Descansos', 'Configuracion base y vista previa semanal.'],
     bloques: ['Bloques', 'Configuracion de bloques fijos por dia.'],
-    coberturas: ['Coberturas Mensuales', 'Cobertura principal y secundaria por mes.'],
     rotacion: ['Rotacion Mensual de Bloques', 'Rol de bloques mensual por monitorista.'],
     rol: ['Rol Mensual', 'Propuesta diaria editable con bloques fijos.'],
     reportes: ['Reportes', 'Preparado para exportacion futura a Excel o PDF.'],
@@ -273,19 +446,6 @@ function App() {
       await cargarDatos();
     } catch (err) {
       setError(err instanceof Error ? err.message : 'No se pudo guardar el bloque.');
-    } finally {
-      setGuardando(false);
-    }
-  }
-
-  async function guardarCobertura(rol: 'Cobertura principal' | 'Cobertura secundaria', personalId: string | null) {
-    setGuardando(true);
-    try {
-      await guardarCoberturaMensual({ mes, anio, personal_id: personalId, rol_cobertura: rol, activo: true, observaciones: null });
-      setMensaje('Cobertura mensual guardada.');
-      await cargarDatos();
-    } catch (err) {
-      setError(err instanceof Error ? err.message : 'No se pudo guardar la cobertura.');
     } finally {
       setGuardando(false);
     }
@@ -380,13 +540,13 @@ function App() {
           {error && <div className="notice error">{error}</div>}
           {mensaje && <div className="notice success">{mensaje}</div>}
 
-          {seccionActiva === 'inicio' && <Inicio supervisores={supervisores.length} monitoristas={monitoristas.length} bloques={bloquesOrdenados.length} horario={horarioActivo} rotacion={rotacion} cobertura={coberturas} onNavigate={setSeccionActiva} />}
+          {seccionActiva === 'inicio' && <Inicio supervisores={supervisores.length} monitoristas={monitoristas.length} bloques={bloquesSitiosBase.length} sitios={sitios.filter((sitio) => sitio.seleccionado).length} horario={horarioActivo} rotacion={rotacion} onNavigate={setSeccionActiva} />}
           {seccionActiva === 'operacion' && <Operacion bloques={bloquesOrdenados} asignaciones={asignaciones} rolDiario={rolDiario} onGenerarRol={generarPropuestaRol} guardando={guardando} />}
           {seccionActiva === 'personal' && <PersonalPanel formulario={formulario} turnos={turnos} personal={personal} editandoId={editandoId} guardando={guardando} actualizarCampo={actualizarCampo} guardarPersonal={guardarPersonal} limpiarFormulario={limpiarFormulario} editarPersona={editarPersona} eliminarPersona={async (persona) => { await eliminarPersonal(persona.id); if (editandoId === persona.id) limpiarFormulario(); await cargarDatos(); }} />}
+          {seccionActiva === 'sitios' && <SitiosPanel sitios={sitios} setSitios={setSitios} />}
           {seccionActiva === 'descansos' && <DescansosPanel personal={personalActivo} turno={turnoActivo} rotacion={rotacion} />}
           {seccionActiva === 'bloques' && <BloquesPanel bloques={bloquesOrdenados} setBloques={setBloques} guardarBloque={guardarBloque} guardando={guardando} />}
-          {seccionActiva === 'coberturas' && <CoberturasPanel mes={mes} anio={anio} personal={personalActivo} coberturas={coberturas} guardarCobertura={guardarCobertura} />}
-          {seccionActiva === 'rotacion' && <RotacionPanel mes={mes} anio={anio} bloques={bloquesOrdenados} personal={personalActivo} propuesta={propuestaRotacion} setPropuesta={setPropuestaRotacion} guardarRotacion={guardarRotacion} guardando={guardando} />}
+          {seccionActiva === 'rotacion' && <RotacionPanel personal={personalActivo} rotacion={rotacion} />}
           {seccionActiva === 'rol' && <RolPanel rolMensual={rolMensual} rolDiario={rolDiario} personal={personal} turno={turnoActivo} bloques={bloquesOrdenados} generarPropuestaRol={generarPropuestaRol} confirmarRol={confirmarRol} guardando={guardando} />}
           {seccionActiva === 'reportes' && <SimplePanel title="Reportes" text="La estructura de Supabase ya separa rol mensual y rol diario para exportar a Excel o PDF en una siguiente fase." />}
           {seccionActiva === 'configuracion' && <ConfiguracionPanel turnos={turnos} diasEspeciales={diasEspeciales} />}
@@ -406,8 +566,8 @@ function MonthBar({ mes, anio, setMes, setAnio }: { mes: number; anio: number; s
   return <section className="month-bar"><Field label="Mes"><input type="number" min={1} max={12} value={mes} onChange={(event) => setMes(Number(event.target.value))} /></Field><Field label="Anio"><input type="number" value={anio} onChange={(event) => setAnio(Number(event.target.value))} /></Field></section>;
 }
 
-function Inicio({ supervisores, monitoristas, bloques, horario, rotacion, cobertura, onNavigate }: { supervisores: number; monitoristas: number; bloques: number; horario: string; rotacion: ConfiguracionRotacion | null; cobertura: CoberturaMensual[]; onNavigate: (id: MenuId) => void }) {
-  return <><section className="stats-grid"><StatCard icon={Users} label="Supervisores activos" value={String(supervisores)} active /><StatCard icon={Users} label="Monitoristas activos" value={String(monitoristas)} /><StatCard icon={LayoutGrid} label="Bloques fijos" value={String(bloques)} detail="Sin horarios" /><StatCard icon={ShieldCheck} label="Cobertura mensual" value={String(cobertura.filter((item) => item.activo).length)} /><StatCard icon={Clock} label="Turno activo" value="Matutino" detail={horario} /><StatCard icon={RefreshCw} label="Ciclo de rotacion" value={`Cada ${rotacion?.semanas_por_ciclo ?? 4} semanas`} detail="Se recorren descansos 1 dia" /></section><section className="quick-grid">{menuItems.filter((item) => item.id !== 'inicio').slice(1, 8).map((item) => <button key={item.id} className="quick-card" onClick={() => onNavigate(item.id)} type="button"><item.icon size={24} /><strong>{item.label}</strong><span>Ir al modulo</span></button>)}</section><InfoBox text="Los bloques son fijos por dia; lo que rota es el personal asignado mensualmente." /></>;
+function Inicio({ supervisores, monitoristas, bloques, sitios, horario, rotacion, onNavigate }: { supervisores: number; monitoristas: number; bloques: number; sitios: number; horario: string; rotacion: ConfiguracionRotacion | null; onNavigate: (id: MenuId) => void }) {
+  return <><section className="stats-grid"><StatCard icon={Users} label="Supervisores activos" value={String(supervisores)} active /><StatCard icon={Users} label="Monitoristas activos" value={String(monitoristas)} /><StatCard icon={MapPin} label="Sitios activos" value={String(sitios)} /><StatCard icon={LayoutGrid} label="Bloques operativos" value={String(bloques)} detail="Sitios agrupados" /><StatCard icon={Clock} label="Turno activo" value="Matutino" detail={horario} /><StatCard icon={RefreshCw} label="Ciclo de descansos" value={`Cada ${rotacion?.semanas_por_ciclo ?? 4} semanas`} detail="Se recorren descansos 1 dia" /></section><section className="quick-grid">{menuItems.filter((item) => item.id !== 'inicio').slice(1, 8).map((item) => <button key={item.id} className="quick-card" onClick={() => onNavigate(item.id)} type="button"><item.icon size={24} /><strong>{item.label}</strong><span>Ir al modulo</span></button>)}</section><InfoBox text="Los sitios se agrupan en bloques; la rotacion semanal asigna monitoristas a cada bloque." /></>;
 }
 
 function Operacion({ bloques, asignaciones, rolDiario, onGenerarRol, guardando }: { bloques: Bloque[]; asignaciones: AsignacionBloqueMensual[]; rolDiario: RolDiario[]; onGenerarRol: () => void; guardando: boolean }) {
@@ -500,6 +660,70 @@ function PersonalPanel({
   );
 }
 
+function SitiosPanel({ sitios, setSitios }: { sitios: SitioItem[]; setSitios: (sitios: SitioItem[]) => void }) {
+  const [nuevoSitio, setNuevoSitio] = useState('');
+  const seleccionados = sitios.filter((sitio) => sitio.seleccionado).length;
+
+  function actualizarSitio(id: string, cambios: Partial<SitioItem>) {
+    setSitios(sitios.map((sitio) => sitio.id === id ? { ...sitio, ...cambios } : sitio));
+  }
+
+  function agregarSitio() {
+    const nombre = nuevoSitio.trim().replace(/\s+/g, ' ');
+    if (!nombre) return;
+    setSitios([
+      ...sitios,
+      {
+        id: `sitio-${Date.now()}`,
+        nombre,
+        seleccionado: true,
+      },
+    ]);
+    setNuevoSitio('');
+  }
+
+  return (
+    <section className="sites-layout">
+      <section className="panel table-panel">
+        <PanelHeader title={`Sitios operativos (${seleccionados} seleccionados de ${sitios.length})`}>
+          <div className="button-row inline">
+            <button className="secondary-button compact" type="button" onClick={() => setSitios(sitios.map((sitio) => ({ ...sitio, seleccionado: true })))}>Seleccionar todos</button>
+            <button className="secondary-button compact" type="button" onClick={() => setSitios(sitios.map((sitio) => ({ ...sitio, seleccionado: false })))}>Quitar seleccion</button>
+          </div>
+        </PanelHeader>
+        <InfoBox text="Puedes activar o desactivar sitios en conjunto, editar nombres y agregar sitios nuevos si cambia la operacion." />
+        <div className="site-add-row">
+          <input value={nuevoSitio} onChange={(event) => setNuevoSitio(event.target.value)} placeholder="Agregar nuevo sitio" />
+          <button className="primary-button compact" type="button" onClick={agregarSitio}>Agregar</button>
+        </div>
+        <div className="sites-grid">
+          {sitios.map((sitio) => (
+            <label key={sitio.id} className="site-item">
+              <input type="checkbox" checked={sitio.seleccionado} onChange={(event) => actualizarSitio(sitio.id, { seleccionado: event.target.checked })} />
+              <input value={sitio.nombre} onChange={(event) => actualizarSitio(sitio.id, { nombre: event.target.value })} />
+            </label>
+          ))}
+        </div>
+      </section>
+
+      <section className="panel table-panel">
+        <PanelHeader title="Vista de bloques por sitios" />
+        <InfoBox text="Estos bloques son la base para asignar monitoristas por semana en Rotacion mensual." />
+        <div className="block-site-grid">
+          {bloquesSitiosBase.map((bloque) => (
+            <article key={bloque.numero} className="block-site-card">
+              <h3>{bloque.nombre}</h3>
+              <ul>
+                {bloque.sitios.map((sitio) => <li key={sitio}>{sitio}</li>)}
+              </ul>
+            </article>
+          ))}
+        </div>
+      </section>
+    </section>
+  );
+}
+
 function DescansosPanel({ personal, turno, rotacion }: { personal: Personal[]; turno: Turno | null; rotacion: ConfiguracionRotacion | null }) {
   const [periodoSeleccionado, setPeriodoSeleccionado] = useState(1);
   const semanasPorCiclo = rotacion?.semanas_por_ciclo ?? 4;
@@ -556,83 +780,85 @@ function BloquesPanel({ bloques, setBloques, guardarBloque, guardando }: { bloqu
   return <section className="panel table-panel"><PanelHeader title="Configuracion de Bloques" /><InfoBox text="Los bloques son fijos por dia; la asignacion rota mensualmente por monitorista. Los bloques no llevan horario." /><Table headers={['Nombre del bloque', 'Descripcion', 'Orden', 'Activo', 'Acciones']}>{bloques.map((bloque) => <tr key={bloque.id}><td><input value={bloque.nombre} onChange={(event) => update(bloque.id, { nombre: event.target.value })} /></td><td><input value={bloque.descripcion ?? ''} onChange={(event) => update(bloque.id, { descripcion: event.target.value })} /></td><td><input type="number" value={bloque.orden} onChange={(event) => update(bloque.id, { orden: Number(event.target.value) })} /></td><td><Toggle checked={bloque.activo} onChange={(value) => update(bloque.id, { activo: value })} /></td><td><button className="primary-button compact" type="button" onClick={() => guardarBloque(bloque)} disabled={guardando}>Guardar</button></td></tr>)}</Table></section>;
 }
 
-function CoberturasPanel({ mes, anio, personal, coberturas, guardarCobertura }: { mes: number; anio: number; personal: Personal[]; coberturas: CoberturaMensual[]; guardarCobertura: (rol: 'Cobertura principal' | 'Cobertura secundaria', personalId: string | null) => void }) {
-  const disponibles = personal.filter((persona) => persona.puede_cubrir_descansos);
-  return <section className="panel padded"><PanelTitle>Coberturas Mensuales</PanelTitle><p className="muted-text">Mes {mes} / {anio}</p>{(['Cobertura principal', 'Cobertura secundaria'] as const).map((rol) => <Field key={rol} label={rol}><select value={coberturas.find((item) => item.rol_cobertura === rol)?.personal_id ?? ''} onChange={(event) => guardarCobertura(rol, event.target.value || null)}><option value="">Sin asignar</option>{disponibles.map((persona) => <option key={persona.id} value={persona.id}>{persona.nombre_completo}</option>)}</select></Field>)}<InfoBox text="La cobertura puede rotarse y editarse manualmente cada mes." /></section>;
+function personaDescansaEnSemana(persona: Personal, semana: SemanaTrabajo, rotacion: ConfiguracionRotacion | null) {
+  const fechaInicioCiclo = fechaIsoLocal(inicioCicloDescansos);
+  return DIAS_SEMANA.some((_, index) => {
+    const fecha = fechaIsoLocal(sumarDias(semana.inicio, index));
+    return personaDescansaEnFecha({ persona: { ...persona, fecha_inicio_ciclo: fechaInicioCiclo }, fecha, rotacion });
+  });
 }
 
-function obtenerSemanasDelMes(mes: number, anio: number) {
-  const primeroMes = new Date(anio, mes - 1, 1);
-  const ultimoMes = new Date(anio, mes, 0);
-  const semanas: { inicio: Date; fin: Date }[] = [];
-  let inicio = obtenerLunesDeSemana(primeroMes);
-
-  while (inicio <= ultimoMes) {
-    const fin = sumarDias(inicio, 6);
-    semanas.push({ inicio, fin });
-    inicio = sumarDias(inicio, 7);
-  }
-
-  return semanas;
+function elegirSupervisorSemana(supervisores: Personal[], semana: SemanaTrabajo, rotacion: ConfiguracionRotacion | null) {
+  return supervisores.find((persona) => !personaDescansaEnSemana(persona, semana, rotacion)) ?? supervisores[0] ?? null;
 }
 
-function rotarBloquePorSemana(bloqueId: string, bloques: Bloque[], semana: number) {
-  const index = bloques.findIndex((bloque) => bloque.id === bloqueId);
-  if (index < 0 || !bloques.length) return bloqueId;
-  return bloques[(index + semana) % bloques.length].id;
+function elegirMonitoristaSemana(monitoristas: Personal[], semanaIndex: number, bloqueIndex: number) {
+  if (!monitoristas.length) return '';
+  return monitoristas[(semanaIndex + bloqueIndex) % monitoristas.length].id;
 }
 
-function RotacionPanel({ mes, anio, bloques, personal, propuesta, setPropuesta, guardarRotacion, guardando }: { mes: number; anio: number; bloques: Bloque[]; personal: Personal[]; propuesta: AsignacionBloqueMensualInput[]; setPropuesta: (p: AsignacionBloqueMensualInput[]) => void; guardarRotacion: (confirmar?: boolean) => void; guardando: boolean }) {
-  const mapaPersonal = new Map(personal.map((persona) => [persona.id, persona]));
-  const mapaBloques = new Map(bloques.map((bloque) => [bloque.id, bloque]));
-  const semanasMes = useMemo(() => obtenerSemanasDelMes(mes, anio), [mes, anio]);
-  const [ajustesSemanales, setAjustesSemanales] = useState<Record<string, string>>({});
-  function update(personalId: string, bloqueId: string) { setPropuesta(propuesta.map((item) => item.personal_id === personalId ? { ...item, bloque_id: bloqueId, observaciones: item.bloque_mes_anterior_id === bloqueId ? 'Repite bloque anterior por ajuste manual.' : item.observaciones } : item)); }
-  function updateSemana(personalId: string, semana: number, bloqueId: string) {
-    setAjustesSemanales((actual) => ({ ...actual, [`${personalId}-${semana}`]: bloqueId }));
+function RotacionPanel({ personal, rotacion }: { personal: Personal[]; rotacion: ConfiguracionRotacion | null }) {
+  const [semanaSeleccionada, setSemanaSeleccionada] = useState(1);
+  const [asignacionesSemana, setAsignacionesSemana] = useState<Record<string, string>>({});
+  const semana = semanasTrabajo.find((item) => item.numero === semanaSeleccionada) ?? semanasTrabajo[0];
+  const semanaIndex = semana.numero - 1;
+  const supervisores = personal.filter((persona) => persona.puesto === 'Supervisor');
+  const monitoristas = personal.filter((persona) => persona.puesto === 'Monitorista');
+  const supervisorSugerido = elegirSupervisorSemana(supervisores, semana, rotacion);
+  const supervisorKey = `${semana.numero}-supervisor`;
+  const supervisorSeleccionado = asignacionesSemana[supervisorKey] ?? supervisorSugerido?.id ?? '';
+
+  function actualizarAsignacion(clave: string, personalId: string) {
+    setAsignacionesSemana((actual) => ({ ...actual, [clave]: personalId }));
   }
 
   return (
     <section className="panel table-panel">
-      <PanelHeader title="Rotacion Mensual de Bloques">
-        <div className="button-row inline">
-          <button className="secondary-button" type="button" onClick={() => guardarRotacion(false)} disabled={guardando}>Guardar cambios</button>
-          <button className="primary-button" type="button" onClick={() => guardarRotacion(true)} disabled={guardando}>Confirmar rotacion mensual</button>
-        </div>
-      </PanelHeader>
-      <InfoBox text="El rol de bloques es mensual por monitorista. Abajo se arma automaticamente por semana y se puede ajustar antes de confirmar." />
-      <Table headers={['Monitorista', 'Bloque del mes anterior', 'Bloque base del mes', 'Mes siguiente sugerido', 'Estado']}>
-        {propuesta.map((item) => (
-          <tr key={item.personal_id}>
-            <td>{mapaPersonal.get(item.personal_id)?.nombre_completo}</td>
-            <td>{mapaBloques.get(item.bloque_mes_anterior_id ?? '')?.nombre ?? 'Sin anterior'}</td>
-            <td><select value={item.bloque_id} onChange={(event) => update(item.personal_id, event.target.value)}>{bloques.map((bloque) => <option key={bloque.id} value={bloque.id}>{bloque.nombre}</option>)}</select></td>
-            <td>{mapaBloques.get(item.bloque_siguiente_sugerido_id ?? '')?.nombre ?? '-'}</td>
-            <td>{item.bloque_mes_anterior_id === item.bloque_id ? 'Repite: requiere confirmacion manual' : 'Sugerido'}</td>
-          </tr>
-        ))}
-      </Table>
-      <div className="week-block">
-        <h3>Bloques automaticos por semana</h3>
-        <Table headers={['Monitorista', ...semanasMes.map((semana) => `${formatearFechaCorta(semana.inicio)} - ${formatearFechaCorta(semana.fin)}`)]}>
-          {propuesta.map((item) => (
-            <tr key={`semanas-${item.personal_id}`}>
-              <td>{mapaPersonal.get(item.personal_id)?.nombre_completo}</td>
-              {semanasMes.map((semana, index) => {
-                const key = `${item.personal_id}-${index}`;
-                const bloqueId = ajustesSemanales[key] ?? rotarBloquePorSemana(item.bloque_id, bloques, index);
-                return (
-                  <td key={key}>
-                    <select value={bloqueId} onChange={(event) => updateSemana(item.personal_id, index, event.target.value)}>
-                      {bloques.map((bloque) => <option key={bloque.id} value={bloque.id}>{bloque.nombre}</option>)}
-                    </select>
-                  </td>
-                );
-              })}
-            </tr>
+      <PanelHeader title="Rotacion mensual por semanas de trabajo">
+        <select value={semanaSeleccionada} onChange={(event) => setSemanaSeleccionada(Number(event.target.value))}>
+          {semanasTrabajo.map((item) => (
+            <option key={item.numero} value={item.numero}>
+              Semana {item.numero}: {formatearFechaCorta(item.inicio)} al {formatearFechaCorta(item.fin)}
+            </option>
           ))}
-        </Table>
-      </div>
+        </select>
+      </PanelHeader>
+      <InfoBox text="Selecciona una semana de trabajo. Los bloques se cargan desde Sitios y solo se asignan monitoristas; el supervisor se sugiere segun descansos." />
+      <section className="rotation-controls">
+        <Field label="Supervisor sugerido">
+          <select value={supervisorSeleccionado} onChange={(event) => actualizarAsignacion(supervisorKey, event.target.value)}>
+            <option value="">Sin supervisor</option>
+            {supervisores.map((persona) => (
+              <option key={persona.id} value={persona.id}>{persona.nombre_completo}</option>
+            ))}
+          </select>
+        </Field>
+        <p className="muted-text">Semana {semana.numero}: {formatearFechaCorta(semana.inicio)} al {formatearFechaCorta(semana.fin)}</p>
+      </section>
+      <Table headers={['Bloque', 'Sitios incluidos', 'Monitorista asignado']}>
+        {bloquesSitiosBase.map((bloque, index) => {
+          const clave = `${semana.numero}-bloque-${bloque.numero}`;
+          const monitoristaId = asignacionesSemana[clave] ?? elegirMonitoristaSemana(monitoristas, semanaIndex, index);
+          return (
+            <tr key={bloque.numero}>
+              <td><strong>{bloque.nombre}</strong></td>
+              <td>
+                <div className="site-list-inline">
+                  {bloque.sitios.map((sitio) => <span key={sitio}>{sitio}</span>)}
+                </div>
+              </td>
+              <td>
+                <select value={monitoristaId} onChange={(event) => actualizarAsignacion(clave, event.target.value)}>
+                  <option value="">Sin asignar</option>
+                  {monitoristas.map((persona) => (
+                    <option key={persona.id} value={persona.id}>{persona.nombre_completo}</option>
+                  ))}
+                </select>
+              </td>
+            </tr>
+          );
+        })}
+      </Table>
     </section>
   );
 }
