@@ -1,8 +1,8 @@
 node_modules
 dist
 .env
-.env.txt
-.env.local
+.env.*
+!.env.example
 .vercel
 *.tsbuildinfo
 *.log
