@@ -996,6 +996,13 @@ function RolOperativoPanel({
   const periodo = periodosDescansos.find((item) => item.numero === periodoSeleccionado) ?? periodosDescansos[0];
   const inicioSemanaSeleccionada = sumarDias(periodo.inicio, semanaPeriodo * 7);
   const finSemanaSeleccionada = sumarDias(inicioSemanaSeleccionada, 6);
+  const nombreSemana = `Rol semanal ${formatearFechaCorta(inicioSemanaSeleccionada)} al ${formatearFechaCorta(finSemanaSeleccionada)} de ${finSemanaSeleccionada.getFullYear()}`;
+  const slugSemana = nombreSemana
+    .normalize('NFD')
+    .replace(/[\u0300-\u036f]/g, '')
+    .toLowerCase()
+    .replace(/[^a-z0-9]+/g, '-')
+    .replace(/^-|-$/g, '');
   const fecha = fechaIsoLocal(fechaDelDiaEnSemana(inicioSemanaSeleccionada, diaSeleccionado));
   const disponibles = personal.filter((persona) => personaTrabajaEnFecha(persona, fecha, rotacion));
   const supervisoresDisponibles = disponibles.filter((persona) => persona.puesto === 'Supervisor');
@@ -1163,9 +1170,14 @@ function RolOperativoPanel({
     url.searchParams.set('vista', 'semana');
     url.searchParams.set('periodo', String(periodoSeleccionado));
     url.searchParams.set('semana', String(semanaPeriodo + 1));
-    await navigator.clipboard.writeText(url.toString());
-    setMensajeRol('Link interactivo semanal copiado.');
+    url.hash = slugSemana;
+    await navigator.clipboard.writeText(`${nombreSemana}\n${url.toString()}`);
+    setMensajeRol(`${nombreSemana} copiado con link interactivo.`);
   }
+
+  useEffect(() => {
+    if (vistaPublica) document.title = nombreSemana;
+  }, [nombreSemana, vistaPublica]);
 
   function resumenDiaSemana(dia: DiaSemana) {
     const fechaDiaDate = fechaDelDiaEnSemana(inicioSemanaSeleccionada, dia);
