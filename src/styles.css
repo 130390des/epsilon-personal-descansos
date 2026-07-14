@@ -16,6 +16,12 @@ body {
   margin: 0;
 }
 
+html,
+body,
+#root {
+  max-width: 100%;
+}
+
 .public-week-page {
   min-height: 100vh;
   background: #f7fafc;
@@ -2565,5 +2571,267 @@ footer span {
   .meal-sites b {
     font-size: 9px;
     padding: 3px 6px;
+  }
+}
+
+@media (max-width: 600px) {
+  html,
+  body {
+    overflow-x: hidden;
+  }
+
+  .public-week-page {
+    width: 100%;
+    overflow-x: hidden;
+    background: linear-gradient(180deg, #f7fbff 0%, #eef8f1 100%);
+  }
+
+  .public-week-page *,
+  .public-week-page *::before,
+  .public-week-page *::after {
+    min-width: 0;
+  }
+
+  .public-week-page .weekly-report-export {
+    gap: 12px;
+  }
+
+  .public-week-page .weekly-role-view,
+  .public-week-page .generated-role {
+    width: calc(100vw - 16px);
+    margin: 8px;
+    border-radius: 18px;
+    overflow: hidden;
+  }
+
+  .public-week-page .weekly-report-hero {
+    padding: 18px 14px 14px;
+  }
+
+  .public-week-page .weekly-report-title {
+    display: grid;
+    grid-template-columns: 48px minmax(0, 1fr);
+    align-items: center;
+  }
+
+  .public-week-page .weekly-report-icon {
+    width: 48px;
+    height: 48px;
+  }
+
+  .public-week-page .weekly-report-title h2 {
+    font-size: 24px;
+    line-height: 1;
+  }
+
+  .public-week-page .weekly-report-title p {
+    font-size: 14px;
+    font-weight: 900;
+  }
+
+  .public-week-page .weekly-report-kpis {
+    grid-template-columns: repeat(4, minmax(0, 1fr));
+    gap: 6px;
+  }
+
+  .public-week-page .weekly-report-kpis div {
+    min-height: 72px;
+    padding: 8px 4px;
+    border-radius: 12px;
+  }
+
+  .public-week-page .weekly-report-kpis svg {
+    width: 18px;
+    height: 18px;
+  }
+
+  .public-week-page .weekly-report-kpis strong {
+    font-size: 22px;
+  }
+
+  .public-week-page .weekly-report-kpis span {
+    font-size: 9px;
+    line-height: 1.15;
+  }
+
+  .public-week-page .weekly-report-strip {
+    display: flex;
+    margin: 10px 12px 0;
+    justify-content: center;
+    font-size: 12px;
+  }
+
+  .public-week-page .weekly-role-grid {
+    display: flex;
+    gap: 8px;
+    padding: 10px 12px 14px;
+    overflow-x: auto;
+    overflow-y: hidden;
+    scroll-snap-type: x mandatory;
+  }
+
+  .public-week-page .weekly-role-grid::-webkit-scrollbar {
+    height: 0;
+  }
+
+  .public-week-page .weekly-role-card {
+    flex: 0 0 78vw;
+    min-width: 0;
+    max-width: 310px;
+    border-radius: 16px;
+    padding: 12px;
+    box-shadow: 0 8px 20px rgba(9, 43, 98, 0.08);
+  }
+
+  .public-week-page .weekly-role-card.active {
+    border-color: #73cb44;
+    box-shadow: 0 10px 24px rgba(22, 143, 54, 0.16);
+  }
+
+  .public-week-page .weekly-role-head strong {
+    font-size: 18px;
+  }
+
+  .public-week-page .weekly-role-head span {
+    font-size: 12px;
+  }
+
+  .public-week-page .weekly-role-metrics span {
+    border-radius: 12px;
+    font-size: 10px;
+    padding: 8px 4px;
+  }
+
+  .public-week-page .weekly-role-metrics span b {
+    font-size: 18px;
+  }
+
+  .public-week-page .weekly-role-assignments {
+    max-height: 118px;
+    overflow: hidden;
+  }
+
+  .public-week-page .weekly-role-assignments span {
+    white-space: normal;
+    overflow: visible;
+    text-overflow: clip;
+    font-size: 12px;
+  }
+
+  .public-week-page .generated-role-header {
+    padding: 14px;
+  }
+
+  .public-week-page .generated-role-header h3 {
+    font-size: 17px;
+  }
+
+  .public-week-page .generated-role-header p {
+    font-size: 13px;
+  }
+
+  .public-week-page .generated-mini-summary {
+    grid-template-columns: repeat(4, minmax(0, 1fr));
+    padding: 10px;
+    gap: 6px;
+  }
+
+  .public-week-page .generated-mini-summary span {
+    display: grid;
+    justify-items: center;
+    gap: 2px;
+    border-radius: 12px;
+    font-size: 18px;
+    line-height: 1;
+    padding: 9px 4px;
+  }
+
+  .public-week-page .generated-mini-summary span svg {
+    width: 17px;
+    height: 17px;
+  }
+
+  .public-week-page .generated-mini-summary span small {
+    font-size: 9px;
+  }
+
+  .public-week-page .generated-sections {
+    padding: 0 10px 10px;
+  }
+
+  .public-week-page .generated-column h4 {
+    display: none;
+  }
+
+  .public-week-page .meal-card {
+    display: grid;
+    grid-template-columns: 74px 28px minmax(0, 1fr);
+    gap: 8px;
+    width: 100%;
+    border-radius: 16px;
+    padding: 10px;
+    box-shadow: 0 6px 16px rgba(9, 43, 98, 0.07);
+  }
+
+  .public-week-page .meal-card strong {
+    min-height: 68px;
+    padding: 7px 4px;
+    font-size: 13px;
+  }
+
+  .public-week-page .meal-card strong span {
+    font-size: 9px;
+  }
+
+  .public-week-page .meal-card i {
+    margin-top: 2px;
+  }
+
+  .public-week-page .meal-card span {
+    font-size: 15px;
+    line-height: 1.15;
+  }
+
+  .public-week-page .meal-card small {
+    display: block;
+    margin-top: 3px;
+    font-size: 12px;
+  }
+
+  .public-week-page .meal-sites {
+    max-height: 86px;
+    overflow: auto;
+    padding-right: 2px;
+  }
+
+  .public-week-page .meal-sites b {
+    font-size: 10px;
+    padding: 4px 7px;
+    max-width: 100%;
+    overflow-wrap: anywhere;
+  }
+
+  .public-week-page .meal-card em {
+    grid-column: 1 / -1;
+    border-top: 1px solid #e4edf6;
+    padding-top: 8px;
+  }
+
+  .public-week-page .generated-rest-strip {
+    margin: 0 10px 10px;
+    display: grid;
+    grid-template-columns: 42px minmax(0, auto);
+    gap: 8px;
+  }
+
+  .public-week-page .generated-rest-strip div {
+    grid-column: 1 / -1;
+    display: grid;
+    gap: 6px;
+  }
+
+  .public-week-page .generated-rest-strip b {
+    width: 100%;
+    justify-content: flex-start;
   }
 }
