@@ -973,6 +973,15 @@ function horaComida(index: number) {
   return `${hora12}:${String(minutos).padStart(2, '0')} ${periodo}`;
 }
 
+function inicialesPersona(nombre: string) {
+  return nombre
+    .split(/\s+/)
+    .filter(Boolean)
+    .slice(0, 2)
+    .map((parte) => parte[0]?.toUpperCase())
+    .join('');
+}
+
 function RolOperativoPanel({
   personal,
   rotacion,
@@ -1209,6 +1218,7 @@ function RolOperativoPanel({
   }
 
   const resumenSemanal = DIAS_SEMANA.map((dia) => resumenDiaSemana(dia));
+  const resumenDiaActivo = resumenSemanal.find((resumen) => resumen.dia === diaSeleccionado) ?? resumenSemanal[0];
 
   return (
     <section className="panel table-panel">
@@ -1239,6 +1249,90 @@ function RolOperativoPanel({
         <button className="secondary-button compact" type="button" onClick={copiarLinkSemanal}>Copiar link semanal</button>
         {mensajeRol && <small>{mensajeRol}</small>}
       </section>}
+      {vistaPublica && (
+        <section className="mobile-week-app" aria-label="Rol semanal movil">
+          <header className="mobile-app-topbar">
+            <button className="mobile-icon-button" type="button" aria-label="Menu"><LayoutGrid size={19} /></button>
+            <img src="/epsilon-logo.png" alt="Epsilon.net tecnologia" />
+            <div className="mobile-app-actions">
+              <Bell size={20} />
+              <span>AS</span>
+            </div>
+          </header>
+
+          <section className="mobile-hero-card">
+            <div>
+              <small>Rol operativo semanal</small>
+              <h2>Semana {semanaPeriodo + 1}</h2>
+              <p>{formatearFechaCorta(inicioSemanaSeleccionada)} al {formatearFechaCorta(finSemanaSeleccionada)} de {finSemanaSeleccionada.getFullYear()}</p>
+            </div>
+            <CalendarDays size={34} />
+          </section>
+
+          <section className="mobile-kpi-row" aria-label="Resumen semanal">
+            <article><Users size={19} /><strong>{Math.round(resumenSemanal.reduce((total, dia) => total + dia.disponiblesDia.length, 0) / 7)}</strong><span>Disp.</span></article>
+            <article><LayoutGrid size={19} /><strong>{(resumenSemanal.reduce((total, dia) => total + dia.bloquesDia.length, 0) / 7).toFixed(1)}</strong><span>Bloques</span></article>
+            <article><MapPin size={19} /><strong>55</strong><span>Sitios</span></article>
+            <article className="danger"><User size={19} /><strong>{resumenSemanal.reduce((total, dia) => total + dia.faltantesDia, 0)}</strong><span>Faltas</span></article>
+          </section>
+
+          <nav className="mobile-day-tabs" aria-label="Dias de la semana">
+            {resumenSemanal.map((resumen) => (
+              <button
+                key={resumen.dia}
+                className={diaSeleccionado === resumen.dia ? 'active' : ''}
+                type="button"
+                onClick={() => setDiaSeleccionado(resumen.dia)}
+              >
+                <strong>{DIA_LABEL[resumen.dia].slice(0, 3)}</strong>
+                <span>{resumen.fechaDiaDate.getDate()}</span>
+              </button>
+            ))}
+          </nav>
+
+          <section className="mobile-day-summary">
+            <div>
+              <strong>{DIA_LABEL[diaSeleccionado]}</strong>
+              <span>{formatearFechaCorta(resumenDiaActivo.fechaDiaDate)} · Periodo {periodoSeleccionado}</span>
+            </div>
+            <div>
+              <b>{resumenDiaActivo.disponiblesDia.length}</b><small>disponibles</small>
+              <b>{resumenDiaActivo.bloquesDia.length}</b><small>bloques</small>
+              <b>{resumenDiaActivo.faltantesDia}</b><small>faltantes</small>
+            </div>
+          </section>
+
+          <section className="mobile-role-list">
+            {personalConComida.map((item, index) => (
+              <article key={item.persona.id} className="mobile-person-card">
+                <div className="mobile-person-head">
+                  <span className="mobile-avatar">{inicialesPersona(item.persona.nombre_completo)}</span>
+                  <div>
+                    <h3>{item.persona.nombre_completo}</h3>
+                    <p>{item.persona.puesto}{item.bloqueAsignado ? ` · ${item.bloqueAsignado.nombre}` : ''}</p>
+                  </div>
+                  <b>{index + 1}</b>
+                </div>
+                <div className="mobile-card-meta">
+                  <span><Utensils size={15} /> Comida {item.hora}</span>
+                  <span><RefreshCw size={15} /> Releva {item.relevo?.nombre_completo ?? 'Sin relevo'}</span>
+                  {item.bloqueAsignado && <span><MapPin size={15} /> {item.bloqueAsignado.sitios.length} sitios</span>}
+                </div>
+                {item.bloqueAsignado && (
+                  <div className="mobile-site-chips">
+                    {item.bloqueAsignado.sitios.map((sitio) => <span key={sitio}>{sitio}</span>)}
+                  </div>
+                )}
+              </article>
+            ))}
+          </section>
+
+          <section className="mobile-rest-card">
+            <div><Bed size={20} /><strong>Descansan</strong></div>
+            {descansan.length ? descansan.map((persona) => <span key={persona.id}>{persona.nombre_completo}</span>) : <span>Nadie</span>}
+          </section>
+        </section>
+      )}
       <div className="weekly-report-export">
       <section className="weekly-role-view">
         <div className="weekly-report-hero">

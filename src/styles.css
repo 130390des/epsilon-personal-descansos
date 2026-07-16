@@ -184,6 +184,10 @@ body,
   padding: 10px 14px;
 }
 
+.mobile-week-app {
+  display: none;
+}
+
 button,
 input,
 select {
@@ -2833,5 +2837,418 @@ footer span {
   .public-week-page .generated-rest-strip b {
     width: 100%;
     justify-content: flex-start;
+  }
+}
+
+@media (max-width: 700px) {
+  .public-week-page {
+    background:
+      radial-gradient(circle at top left, rgba(126, 201, 0, 0.16), transparent 34%),
+      linear-gradient(180deg, #f8fbff 0%, #eef6fb 46%, #f6fbef 100%);
+    min-height: 100vh;
+    padding: 0;
+  }
+
+  .public-week-page .weekly-report-export {
+    display: none;
+  }
+
+  .public-week-page .mobile-week-app {
+    display: block;
+    min-height: 100vh;
+    padding: 10px 12px 26px;
+    color: #071b3a;
+  }
+
+  .mobile-app-topbar {
+    position: sticky;
+    top: 0;
+    z-index: 5;
+    display: grid;
+    grid-template-columns: 42px minmax(0, 1fr) 76px;
+    align-items: center;
+    gap: 10px;
+    min-height: 58px;
+    margin: -10px -12px 10px;
+    padding: 10px 14px;
+    background: rgba(248, 251, 255, 0.92);
+    backdrop-filter: blur(16px);
+    border-bottom: 1px solid rgba(213, 228, 242, 0.85);
+  }
+
+  .mobile-app-topbar img {
+    width: 132px;
+    justify-self: center;
+    display: block;
+  }
+
+  .mobile-icon-button {
+    width: 38px;
+    height: 38px;
+    border: 1px solid #d5e4f2;
+    border-radius: 12px;
+    background: #fff;
+    color: #092b62;
+    display: grid;
+    place-items: center;
+  }
+
+  .mobile-app-actions {
+    justify-self: end;
+    display: flex;
+    align-items: center;
+    gap: 10px;
+    color: #092b62;
+  }
+
+  .mobile-app-actions span {
+    width: 36px;
+    height: 36px;
+    border-radius: 999px;
+    background: #0f4f92;
+    color: #fff;
+    display: grid;
+    place-items: center;
+    font-size: 13px;
+    font-weight: 900;
+  }
+
+  .mobile-hero-card {
+    border: 1px solid #d8e8f8;
+    border-radius: 22px;
+    background: linear-gradient(135deg, #ffffff 0%, #f6fbff 58%, #ecf8df 100%);
+    box-shadow: 0 14px 34px rgba(9, 43, 98, 0.12);
+    padding: 18px;
+    display: grid;
+    grid-template-columns: minmax(0, 1fr) 52px;
+    gap: 14px;
+    align-items: center;
+  }
+
+  .mobile-hero-card small {
+    display: block;
+    color: #7ec900;
+    font-weight: 900;
+    font-size: 12px;
+    text-transform: uppercase;
+  }
+
+  .mobile-hero-card h2 {
+    margin: 5px 0 2px;
+    color: #092b62;
+    font-size: 30px;
+    line-height: 1;
+  }
+
+  .mobile-hero-card p {
+    margin: 0;
+    color: #1f5c9f;
+    font-size: 14px;
+    font-weight: 800;
+  }
+
+  .mobile-hero-card > svg {
+    width: 52px;
+    height: 52px;
+    border-radius: 17px;
+    padding: 12px;
+    background: #0f4f92;
+    color: #fff;
+  }
+
+  .mobile-kpi-row {
+    display: grid;
+    grid-template-columns: repeat(4, minmax(0, 1fr));
+    gap: 8px;
+    margin-top: 10px;
+  }
+
+  .mobile-kpi-row article {
+    min-height: 80px;
+    border: 1px solid #d8e8f8;
+    border-radius: 17px;
+    background: rgba(255, 255, 255, 0.92);
+    box-shadow: 0 8px 20px rgba(9, 43, 98, 0.07);
+    display: grid;
+    justify-items: center;
+    align-content: center;
+    gap: 2px;
+    color: #168f36;
+  }
+
+  .mobile-kpi-row article:nth-child(2) {
+    color: #2f7fc1;
+  }
+
+  .mobile-kpi-row article:nth-child(3) {
+    color: #168f36;
+  }
+
+  .mobile-kpi-row article.danger {
+    color: #f4a000;
+  }
+
+  .mobile-kpi-row strong {
+    color: #092b62;
+    font-size: 24px;
+    line-height: 1;
+  }
+
+  .mobile-kpi-row span {
+    color: #516078;
+    font-size: 10px;
+    font-weight: 900;
+  }
+
+  .mobile-day-tabs {
+    position: sticky;
+    top: 58px;
+    z-index: 4;
+    display: flex;
+    gap: 8px;
+    margin: 12px -12px 0;
+    padding: 8px 12px;
+    overflow-x: auto;
+    background: rgba(238, 246, 251, 0.9);
+    backdrop-filter: blur(14px);
+    border-bottom: 1px solid rgba(213, 228, 242, 0.75);
+    -webkit-overflow-scrolling: touch;
+  }
+
+  .mobile-day-tabs::-webkit-scrollbar {
+    height: 0;
+  }
+
+  .mobile-day-tabs button {
+    flex: 0 0 58px;
+    border: 1px solid #d8e8f8;
+    border-radius: 17px;
+    background: #fff;
+    color: #516078;
+    min-height: 64px;
+    padding: 8px 6px;
+    display: grid;
+    justify-items: center;
+    gap: 4px;
+    box-shadow: 0 6px 18px rgba(9, 43, 98, 0.06);
+  }
+
+  .mobile-day-tabs button strong {
+    font-size: 12px;
+    color: #092b62;
+  }
+
+  .mobile-day-tabs button span {
+    width: 28px;
+    height: 28px;
+    border-radius: 999px;
+    display: grid;
+    place-items: center;
+    background: #f3f7fb;
+    color: #092b62;
+    font-weight: 900;
+  }
+
+  .mobile-day-tabs button.active {
+    border-color: #7ec900;
+    background: #f5ffe8;
+    box-shadow: 0 10px 24px rgba(126, 201, 0, 0.22);
+  }
+
+  .mobile-day-tabs button.active span {
+    background: #7ec900;
+    color: #fff;
+  }
+
+  .mobile-day-summary {
+    margin-top: 12px;
+    border: 1px solid #d8e8f8;
+    border-radius: 20px;
+    background: #fff;
+    padding: 14px;
+    box-shadow: 0 10px 26px rgba(9, 43, 98, 0.08);
+  }
+
+  .mobile-day-summary > div:first-child {
+    display: grid;
+    gap: 2px;
+    margin-bottom: 12px;
+  }
+
+  .mobile-day-summary strong {
+    color: #092b62;
+    font-size: 20px;
+  }
+
+  .mobile-day-summary span {
+    color: #516078;
+    font-size: 13px;
+    font-weight: 800;
+  }
+
+  .mobile-day-summary > div:last-child {
+    display: grid;
+    grid-template-columns: repeat(3, minmax(0, 1fr));
+    gap: 8px;
+  }
+
+  .mobile-day-summary b {
+    display: block;
+    border-radius: 13px 13px 0 0;
+    background: #f3fae8;
+    color: #3f6f00;
+    text-align: center;
+    padding: 8px 4px 2px;
+    font-size: 18px;
+  }
+
+  .mobile-day-summary small {
+    display: block;
+    border-radius: 0 0 13px 13px;
+    background: #f3fae8;
+    color: #3f6f00;
+    text-align: center;
+    padding: 0 4px 8px;
+    font-size: 10px;
+    font-weight: 900;
+  }
+
+  .mobile-role-list {
+    display: grid;
+    gap: 10px;
+    margin-top: 12px;
+  }
+
+  .mobile-person-card {
+    border: 1px solid #d8e8f8;
+    border-radius: 22px;
+    background: #fff;
+    padding: 14px;
+    box-shadow: 0 12px 28px rgba(9, 43, 98, 0.1);
+  }
+
+  .mobile-person-head {
+    display: grid;
+    grid-template-columns: 46px minmax(0, 1fr) 32px;
+    gap: 10px;
+    align-items: center;
+  }
+
+  .mobile-avatar {
+    width: 46px;
+    height: 46px;
+    border-radius: 999px;
+    background: #e9f3ff;
+    color: #0f4f92;
+    display: grid;
+    place-items: center;
+    font-weight: 900;
+  }
+
+  .mobile-person-head h3 {
+    margin: 0;
+    color: #071b3a;
+    font-size: 16px;
+    line-height: 1.2;
+  }
+
+  .mobile-person-head p {
+    margin: 3px 0 0;
+    color: #516078;
+    font-size: 12px;
+    font-weight: 800;
+  }
+
+  .mobile-person-head b {
+    width: 32px;
+    height: 32px;
+    border-radius: 999px;
+    background: #168f36;
+    color: #fff;
+    display: grid;
+    place-items: center;
+  }
+
+  .mobile-card-meta {
+    display: grid;
+    gap: 7px;
+    margin-top: 12px;
+  }
+
+  .mobile-card-meta span {
+    border: 1px solid #e4edf6;
+    border-radius: 13px;
+    background: #fbfdff;
+    color: #1b3f75;
+    padding: 8px 10px;
+    font-size: 12px;
+    font-weight: 850;
+    display: flex;
+    align-items: center;
+    gap: 8px;
+  }
+
+  .mobile-card-meta svg {
+    color: #168f36;
+    flex: 0 0 auto;
+  }
+
+  .mobile-site-chips {
+    display: flex;
+    flex-wrap: wrap;
+    gap: 5px;
+    max-height: 122px;
+    overflow: auto;
+    margin-top: 10px;
+    padding-right: 2px;
+  }
+
+  .mobile-site-chips span {
+    border: 1px solid #d8e8f8;
+    border-radius: 999px;
+    background: #f6fbff;
+    color: #071b3a;
+    padding: 5px 8px;
+    font-size: 10px;
+    font-weight: 850;
+  }
+
+  .mobile-rest-card {
+    margin-top: 12px;
+    border: 1px solid #cde0f6;
+    border-radius: 22px;
+    background: #fff;
+    padding: 14px;
+    box-shadow: 0 12px 28px rgba(9, 43, 98, 0.08);
+    display: flex;
+    flex-wrap: wrap;
+    gap: 8px;
+    align-items: center;
+  }
+
+  .mobile-rest-card div {
+    width: 100%;
+    display: flex;
+    align-items: center;
+    gap: 8px;
+    color: #092b62;
+  }
+
+  .mobile-rest-card div svg {
+    width: 36px;
+    height: 36px;
+    border-radius: 999px;
+    padding: 8px;
+    background: #174fb8;
+    color: #fff;
+  }
+
+  .mobile-rest-card span {
+    border: 1px solid #d8e8f8;
+    border-radius: 999px;
+    background: #fbfdff;
+    padding: 7px 10px;
+    font-size: 12px;
+    font-weight: 850;
   }
 }
