@@ -941,9 +941,9 @@ function distribuirSitiosEnBloques(cantidadBloques: number) {
   });
 }
 
-function obtenerBloquesOperativos(periodo: number, dia: DiaSemana, monitoristasDisponibles: number) {
+function obtenerBloquesOperativos(periodo: number, dia: DiaSemana, personalParaBloques: number) {
   const bloquesDelPeriodo = obtenerBloquesPorPeriodoYDia(periodo, dia);
-  if (bloquesDelPeriodo.length === 4 || monitoristasDisponibles < 5) {
+  if (bloquesDelPeriodo.length === 4 || personalParaBloques < 5) {
     return bloquesDelPeriodo.length === 4 ? bloquesDelPeriodo : distribuirSitiosEnBloques(4);
   }
   return bloquesDelPeriodo;
@@ -1012,9 +1012,9 @@ function RolOperativoPanel({
   const supervisorPrincipalId = ajustes[supervisorKey] ?? supervisoresDisponibles[0]?.id ?? '';
   const supervisorPrincipal = supervisoresDisponibles.find((persona) => persona.id === supervisorPrincipalId) ?? null;
   const supervisoresApoyo = supervisoresDisponibles.filter((persona) => persona.id !== supervisorPrincipalId);
-  const bloquesOperativos = obtenerBloquesOperativos(periodoSeleccionado, diaSeleccionado, monitoristasDisponibles.length);
   const diasReducidos = diasCuatroBloquesPorPeriodo(periodoSeleccionado);
   const personasParaBloque = [...monitoristasDisponibles, ...supervisoresApoyo];
+  const bloquesOperativos = obtenerBloquesOperativos(periodoSeleccionado, diaSeleccionado, personasParaBloque.length);
   const faltantes = Math.max(0, bloquesOperativos.length - personasParaBloque.length);
   const descansan = personal.filter((persona) => !personaTrabajaEnFecha(persona, fecha, rotacion));
 
@@ -1100,8 +1100,8 @@ function RolOperativoPanel({
     const monitoristasDia = disponiblesDia.filter((persona) => persona.puesto === 'Monitorista');
     const supervisorDia = supervisoresDia[0] ?? null;
     const supervisoresApoyoDia = supervisoresDia.filter((persona) => persona.id !== supervisorDia?.id);
-    const bloquesDia = obtenerBloquesOperativos(periodoSeleccionado, dia, monitoristasDia.length);
     const personasDia = [...monitoristasDia, ...supervisoresApoyoDia];
+    const bloquesDia = obtenerBloquesOperativos(periodoSeleccionado, dia, personasDia.length);
     const ajustesSemanaAnterior = leerAjustesSemanaAnterior();
     const offset = (periodoSeleccionado - 1) + semanaIndex + DIAS_SEMANA.indexOf(dia);
     const personasRotadas = personasDia.length
@@ -1188,7 +1188,7 @@ function RolOperativoPanel({
     const supervisorDiaId = ajustes[`${periodoSeleccionado}-${semanaPeriodo + 1}-${dia}-supervisor`] ?? supervisoresDia[0]?.id ?? '';
     const supervisoresApoyoDia = supervisoresDia.filter((persona) => persona.id !== supervisorDiaId);
     const personasBloqueDia = [...monitoristasDia, ...supervisoresApoyoDia];
-    const bloquesDia = obtenerBloquesOperativos(periodoSeleccionado, dia, monitoristasDia.length);
+    const bloquesDia = obtenerBloquesOperativos(periodoSeleccionado, dia, personasBloqueDia.length);
     const asignacionesDia = bloquesDia.map((bloque, index) => {
       const clave = `${periodoSeleccionado}-${semanaPeriodo + 1}-${dia}-bloque-${bloque.numero}`;
       const personaId = ajustes[clave] ?? personasBloqueDia[index]?.id ?? '';
